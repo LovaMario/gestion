@@ -16,42 +16,33 @@ import {
 
 // Importe ici tes composants de gestion
 import BonDeSortiePage from "../bon/BonDeSortie";
-const ACTIVE_COLOR = "#F1841F";
+const ACTIVE_COLOR = "#c94b06";
 
 // MenuItem simple
-function MenuItem({
-  value,
-  label,
-  active,
-  onClick,
-  Icon,
-}: {
-  value: string;
-  label: string;
-  active: string;
-  onClick: (v: string) => void;
-  Icon: any;
-}) {
-  return (
-    <div
-      onClick={() => onClick(value)}
-      style={{
-        cursor: "pointer",
-        padding: "8px",
-        borderRadius: "4px",
-        backgroundColor: active === value ? ACTIVE_COLOR : "transparent",
-        color: active === value ? "white" : "black",
-        display: "flex",
-        alignItems: "center",
-        marginBottom: "4px",
-      }}
-    >
-      <Icon style={{ marginRight: "8px" }} />
-      {label}
-    </div>
-  );
+function MenuItem({ value, label, active, onClick, Icon }: any) {
+  {
+    return (
+      <div
+        onClick={() => onClick(value)}
+        style={{
+          cursor: "pointer",
+          padding: "8px",
+          borderRadius: "4px",
+          backgroundColor: active === value ? ACTIVE_COLOR : "transparent",
+          color: active === value ? "white" : "black",
+          marginBottom: "4px",
+        }}
+      >
+        <Icon style={{ marginRight: "8px" }} />
+        {label}
+      </div>
+    );
+  }
 }
 
+
+export default function NavbarGestion() {
+  const [active, setActive] = useState("equipements");
 // Tableau des sections gestion
 const gestionData = [
   {
@@ -97,10 +88,6 @@ const gestionData = [
     component: <div>Personnel Page</div>,
   },
 ];
-
-export default function NavbarGestion() {
-  const [active, setActive] = useState("equipements");
-
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw" }}>
       {/* Navbar */}
@@ -108,8 +95,6 @@ export default function NavbarGestion() {
         w={{ base: 300 }}
         style={{ borderRight: "1px solid #ddd" }}
       >
-        
-
         <ScrollArea style={{ height: "calc(100vh - 160px)" }}>
           {gestionData.map((item) => (
             <MenuItem
