@@ -10,53 +10,106 @@ import {
   PaperProps,
   PasswordInput,
   Stack,
+  Text,
   TextInput,
   Title,
+  Loader,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useToggle } from "@mantine/hooks";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function LoginPage(Props: PaperProps) {
-  const [type, toggle] = useToggle(["Se connecter", "Créer un compte"]);
+export default function LoginPage(props: PaperProps) {
+  const [type, toggle] = useToggle(["Se Connecter", "Créer un compte"]);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [loadingName, setLoadingName] = useState(false);
 
   const form = useForm({
-    initialValues: {
-      identification: "",
-      password: "",
-      name: "",
-    },
+    initialValues: { matricule: "", name: "", password: "" },
     validate: {
-      identification: (val) => (val.length > 0 ? null : "Matri obligatoire"),
+      matricule: (val) => (val.length > 0 ? null : "Matricule obligatoire"),
       password: (val) =>
         val.length < 6
-          ? "Le Mot de passe doit contenir au moins 6 caractères"
+          ? "Le mot de passe doit contenir au moins 6 caractères"
           : null,
       name: (val) =>
-        type === "créer un compte" && val.length < 3 ? "Nom obligatoire" : null,
+        type === "Créer un compte" && val.length < 3
+          ? "Le nom est requis"
+          : null,
     },
   });
-  const handleSubmit = (values: typeof form.values) => {
-    if (type === "Créer un compte" && !isTermsAccepted) {
-      alert(
-        "Vous devez accepter les termes et conditions pour créer un compte"
-      );
+
+  // Recherche auto du nom en mode login
+  useEffect(() => {
+    if (!form.values.matricule || type === "Créer un compte") {
+      setUserName("");
+      return;
     }
-    if (type === "Se connecter") {
-      alert("connexion réussie");
-      window.location.href = "/dashboard";
-    } else {
-      alert("Compte créé avec succès");
-      toggle();
+
+    const timeoutId = setTimeout(async () => {
+      setLoadingName(true);
+      try {
+        const res = await fetch(
+          `/api/utilisateurs?matricule=${form.values.matricule.trim()}`
+        );
+        const data = await res.json();
+        setUserName(res.ok ? data.name : "Utilisateur non trouvé");
+      } catch {
+        setUserName("Erreur de connexion");
+      } finally {
+        setLoadingName(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [form.values.matricule, type]);
+
+  const handleSubmit = async (values: typeof form.values) => {
+    if (type === "Créer un compte" && !isTermsAccepted) {
+      alert("Vous devez accepter les termes et conditions.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/utilisateurs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...values, type }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      alert(data.message);
+      if (type === "Se Connecter") {
+        window.location.href = "/dashboard";
+      } else {
+        toggle();
+      }
+    } catch (err: any) {
+      alert(err.message);
     }
   };
+
   return (
-    <Center h="100vh">
-      <Paper radius="md" p="lg" withBorder w={550}>
-        <Title order={2} mb="md" ta="center">
-          Connexion
+    <Center h="100%" mt={100}>
+      <Paper
+        radius="lg"
+        p="xl"
+        shadow="xl"
+        withBorder
+        w={450}
+        style={{ backgroundColor: "white" }}
+      >
+        <Title order={2} mb="sm" ta="center" c="#c94b06">
+          {type}
         </Title>
+        <Text size="sm" ta="center" c="dimmed" mb="lg">
+          {type === "Se Connecter"
+            ? "Entrez vos identifiants pour accéder au tableau de bord."
+            : "Créez un compte pour rejoindre la plateforme."}
+        </Text>
 
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack>
@@ -66,17 +119,46 @@ export default function LoginPage(Props: PaperProps) {
                 placeholder="Votre nom"
                 {...form.getInputProps("name")}
                 radius="md"
+                required
               />
             )}
             <TextInput
-            required
-              label="Matricule"
-              placeholder="Votre numero d'identification"
-              {...form.getInputProps("identification")}
+              label={
+                <Group justify="left" gap={5}>
+                  <Text>Matricule</Text>
+                  {type === "Se Connecter" &&
+                    form.values.matricule &&
+                    (loadingName ? (
+                      <Group gap={5}>
+                        <Loader size="xs" />
+                        <Text size="xs" c="dimmed">
+                          Recherche du nom...
+                        </Text>
+                      </Group>
+                    ) : (
+                      <Text
+                        size="md"
+                        c={
+                          userName === "Utilisateur non trouvé"
+                            ? "red"
+                            : userName === "Erreur de connexion"
+                            ? "gray"
+                            : "dimmed"
+                        }
+                        fw={500}
+                      >
+                        {userName}
+                      </Text>
+                    ))}
+                </Group>
+              }
+              placeholder="Votre matricule"
+              {...form.getInputProps("matricule")}
               radius="md"
             />
 
             <PasswordInput
+              required
               label="Mot de passe"
               placeholder="Votre mot de passe"
               {...form.getInputProps("password")}
@@ -85,8 +167,7 @@ export default function LoginPage(Props: PaperProps) {
 
             {type === "Créer un compte" && (
               <Checkbox
-                color="#c94b06"
-                label="J'accepte les termes et les conditions d'utilisation"
+                label="J'accepte les termes et conditions"
                 checked={isTermsAccepted}
                 onChange={(event) =>
                   setIsTermsAccepted(event.currentTarget.checked)
@@ -98,31 +179,30 @@ export default function LoginPage(Props: PaperProps) {
                       backgroundColor: "#c94b06",
                       borderColor: "#c94b06",
                     },
-                    "&:not(:checked)": {
-                      borderColor: "#c94b06",
-                    },
+                    "&:not(:checked)": { borderColor: "#c94b06" },
                   },
                 }}
               />
             )}
           </Stack>
-          <Group justify="space-between" mt="lx">
+
+          <Group justify="space-between" mt="lg">
             <Anchor
               component="button"
               type="button"
               c="dimmed"
               onClick={() => toggle()}
+              size="sm"
             >
               {type === "Créer un compte"
-                ? "Vous avez déja un compte? Se connecter"
-                : "Vous n'avez pas de compte? Créer un compte"}
+                ? "Déjà inscrit ? Se connecter"
+                : "Pas encore de compte ? Créer un compte"}
             </Anchor>
 
             <Button
               color="#c94b06"
               type="submit"
               radius="xl"
-              mt="md"
               disabled={type === "Créer un compte" && !isTermsAccepted}
             >
               {type}
@@ -133,3 +213,5 @@ export default function LoginPage(Props: PaperProps) {
     </Center>
   );
 }
+
+// https://chatgpt.com/share/68da87c3-1ccc-8004-bb0e-e6d916d6b99a

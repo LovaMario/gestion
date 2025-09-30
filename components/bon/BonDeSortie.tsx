@@ -1,105 +1,90 @@
 "use client";
-
-import {
-  AppShell,
-  Button,
-  Group,
-  Tabs,
-  Title,
-} from "@mantine/core";
-import { useState } from "react";
-import BonDeSortieListe from "./BonDeSortieListe";
+import React, { useState } from "react";
 import BonDeSortieDetails from "./BonDeSortieDetails";
+import BonDeSortieListe from "./BonDeSortieListe";
+import { Button, Group } from "@mantine/core";
 
 export type BonDeSortie = {
   id: number;
   piece: number;
   manuelle: number;
   quantite: number;
-  date_sortie: string;
+  dateSortie: string;
+  magasin: string;
   depot: string;
-  motif: string;
   departement: string;
   secteur: string;
   atelier: string;
-  codeArticle: number;
+  codeArticle: string;
   libelleArticle: string;
   imputation: string;
   imputationCode: string;
   commande: string;
-  identification: number;
+  unite: string;
+  check1: boolean;
+  check2: boolean;
+  check3: boolean;
+  locked1: boolean;
+  locked2: boolean;
+  locked3: boolean;
+
+  // ✅ Ajout pour les noms confirmateurs
+  checkerNames?: { [key: number]: string };
 };
 
 export default function BonDeSortiePage() {
-  const [BonDeSortie, setBonDeSortie] = useState<BonDeSortie[]>([]);
+  const handleNewBon = () => {
+    setSelectedBonDeSortie(null);
+    setIsEditing(true);
+  };
+
+  const [bonsDeSortie, setBonDeSortie] = useState<BonDeSortie[]>([]);
   const [selectedBonDeSortie, setSelectedBonDeSortie] =
     useState<BonDeSortie | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isActiveTab, setIsActiveTab] = useState<string | null>("liste");
 
-  const handleNewBonDeSortie = () => {
-    setSelectedBonDeSortie(null);
-    setIsEditing(true);
-    setIsActiveTab("details");
-  };
-  const handleSelectBonDeSortieForEdit = (bonDeSortie: BonDeSortie) => {
-    setSelectedBonDeSortie(bonDeSortie);
-    setIsEditing(true);
-    setIsActiveTab("details"); // basculer vers l'onglet "Détails"
-  };
-  const handleSaveAndReturn = (updateBonDeSortie: BonDeSortie) => {
-    setBonDeSortie((prev) =>
-      prev.map((b) => (b.id === updateBonDeSortie.id ? updateBonDeSortie : b))
-    );
+  const handleSaveAndReturn = (updatedBon: BonDeSortie) => {
+    // Mise à jour ou ajout si nouveau
+    setBonDeSortie((prev) => {
+      const exists = prev.find((b) => b.id === updatedBon.id);
+      if (exists) {
+        return prev.map((b) => (b.id === updatedBon.id ? updatedBon : b));
+      } else {
+        return [...prev, updatedBon];
+      }
+    });
+    setSelectedBonDeSortie(updatedBon);
     setIsEditing(false);
-    setSelectedBonDeSortie(updateBonDeSortie);
-    setIsActiveTab("liste"); // basculer vers l'onglet "Liste"
   };
 
   return (
-    <AppShell style={{ padding: "2rem" }}>
-      <Title order={2} mb="2rem">
-        Bon de sortie Magasin (BSM)
-      </Title>
-      <Group mb="md">
-        <Button onClick={handleNewBonDeSortie} color="#c94b06">
-          Nouveau Bon de sortie
+    <div>
+      <Group>
+        <Button justify="flex-start" onClick={handleNewBon} color="#c94b06">
+          Nouveau bon
         </Button>
       </Group>
-
-      <Tabs
-        value={isActiveTab}
-        onChange={setIsActiveTab}
-        variant="outline"
-        radius="md"
-      >
-        <Tabs.List>
-          <Tabs.Tab value="liste">Liste</Tabs.Tab>
-          <Tabs.Tab value="details" disabled={!isEditing}>
-            Détails
-          </Tabs.Tab>
-        </Tabs.List>
-
-        <Tabs.Panel value="liste" pt="md">
-          <BonDeSortieListe
-            BonDeSortie={BonDeSortie}
-            setBonDeSortie={setBonDeSortie}
-            setSelectedBonDeSortie={handleSelectBonDeSortieForEdit}
-            setIsEditing={setIsEditing}
-          />
-        </Tabs.Panel>
-        <Tabs.Panel value="details" pt="md">
+      <div style={{ display: "flex", gap: "2rem" }}>
+        <div style={{ flex: 3 }}>
           <BonDeSortieDetails
-            BonDeSortie={BonDeSortie}
-            setBonDeSortie={setBonDeSortie}
+            BonsDeSortie={bonsDeSortie}
+            setBonsDeSortie={setBonDeSortie}
             selectedBonDeSortie={selectedBonDeSortie}
             setSelectedBonDeSortie={setSelectedBonDeSortie}
             isEditing={isEditing}
             setIsEditing={setIsEditing}
             onSaveAndReturn={handleSaveAndReturn}
           />
-        </Tabs.Panel>
-      </Tabs>
-    </AppShell>
+        </div>
+        <div style={{ flex: 2 }}>
+          <BonDeSortieListe
+            bonsDeSortie={bonsDeSortie}
+            setBonsDeSortie={setBonDeSortie}
+            setSelectedBonDeSortie={setSelectedBonDeSortie}
+            setIsEditing={setIsEditing}
+          />
+        </div>
+      </div>
+    </div>
   );
 }

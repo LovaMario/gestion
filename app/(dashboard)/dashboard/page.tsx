@@ -2,10 +2,8 @@
 
 import NavbarSimpleColored from "@/components/SideBar/Sidebar";
 import { AppShell, Title } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
 
 function DashboardPage() {
-  const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
     <AppShell>

@@ -1,21 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { AppShell, ScrollArea, Box, Title, Image, Group } from "@mantine/core";
 import {
-  IconArrowBigUpLinesFilled,
-  IconDatabaseImport,
-  IconKey,
-  IconReceipt2,
-  IconSettings,
-  Icon2fa,
-  IconFingerprint,
+  AppShell,
+  ScrollArea,
+  Box,
+  Title,
+  Image,
+  Group,
+  Text,
+} from "@mantine/core";
+import {
   IconLogout,
   IconSwitchHorizontal,
+  IconDatabaseExport,
+  IconDatabaseImport,
 } from "@tabler/icons-react";
+import BonDeSortiePage from "../bon/BonDeSortie";
+import ManifoldPage from "../manifold/manifold";
 
 // Importe ici tes composants de gestion
-import BonDeSortiePage from "../bon/BonDeSortie";
 const ACTIVE_COLOR = "#c94b06";
 
 // MenuItem simple
@@ -40,62 +44,34 @@ function MenuItem({ value, label, active, onClick, Icon }: any) {
   }
 }
 
-
 export default function NavbarGestion() {
-  const [active, setActive] = useState("equipements");
-// Tableau des sections gestion
-const gestionData = [
-  {
-    value: "BonDeSortie",
-    label: "BonDeSortie",
-    Icon: IconDatabaseImport,
-    component: <BonDeSortiePage />,
-  },
-  {
-    value: "machines",
-    label: "Machines / Organes",
-    Icon: IconArrowBigUpLinesFilled,
-    component: <div>Machines Page</div>,
-  },
-  {
-    value: "outillages",
-    label: "Outillages",
-    Icon: IconKey,
-    component: <div>Outillages Page</div>,
-  },
-  {
-    value: "magasin",
-    label: "Magasin",
-    Icon: IconReceipt2,
-    component: <div>Magasin Page</div>,
-  },
-  {
-    value: "stocks",
-    label: "Stocks",
-    Icon: IconSettings,
-    component: <div>Stocks Page</div>,
-  },
-  {
-    value: "ordinateurs",
-    label: "Ordinateurs & Réseau",
-    Icon: Icon2fa,
-    component: <div>Ordinateurs Page</div>,
-  },
-  {
-    value: "personnel",
-    label: "Personnel",
-    Icon: IconFingerprint,
-    component: <div>Personnel Page</div>,
-  },
-];
+  const [active, setActive] = useState("");
+  // Tableau des sections gestion
+  const gestionData = [
+    {
+      value: "BonDeSortie",
+      label: "Bon de sortie",
+      Icon: IconDatabaseExport,
+      component: <BonDeSortiePage />,
+    },
+    {
+      value: "manifold",
+      label: "Manifold",
+      Icon: IconDatabaseImport,
+      component: <ManifoldPage />,
+    },
+  ];
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw" }}>
+    <div style={{ display: "flex", width: "100vw" }}>
       {/* Navbar */}
       <AppShell.Navbar
         w={{ base: 300 }}
         style={{ borderRight: "1px solid #ddd" }}
       >
         <ScrollArea style={{ height: "calc(100vh - 160px)" }}>
+          <Group justify="center" m={20}>
+            <Text>Gestion de stocks HAZOVATO</Text>
+          </Group>
           {gestionData.map((item) => (
             <MenuItem
               key={item.value}
@@ -134,9 +110,18 @@ const gestionData = [
       </AppShell.Navbar>
 
       {/* Contenu */}
-      <div style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>
+      <div
+        style={{
+          flex: 1,
+          padding: "2rem",
+          overflowY: "auto",
+          marginLeft: "300px",
+        }}
+      >
         {gestionData.find((d) => d.value === active)?.component ?? (
-          <div>Sélectionnez un élément du menu</div>
+          <AppShell mt={250} ml={600} pos="fixed">
+            <img src="logo.png" />
+          </AppShell>
         )}
       </div>
     </div>
