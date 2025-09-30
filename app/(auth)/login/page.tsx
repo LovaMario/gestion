@@ -214,4 +214,3 @@ export default function LoginPage(props: PaperProps) {
   );
 }
 
-// https://chatgpt.com/share/68da87c3-1ccc-8004-bb0e-e6d916d6b99a

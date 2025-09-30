@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { BonDeSortie } from "./BonDeSortie";
 import {
   Button,
@@ -22,10 +22,12 @@ import { useForm } from "@mantine/form";
 import { useToggle } from "@mantine/hooks";
 
 type Props = {
-  BonsDeSortie: BonDeSortie[]; // ← tableau des bons
-  setBonsDeSortie: (newList: BonDeSortie[]) => void;
+  BonsDeSortie: BonDeSortie[];
+  setBonsDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie[]>>;
   selectedBonDeSortie: BonDeSortie | null;
-  setSelectedBonDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie | null>>;
+  setSelectedBonDeSortie: React.Dispatch<
+    React.SetStateAction<BonDeSortie | null>
+  >;
   isEditing: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   onSaveAndReturn: (updatedBon: BonDeSortie) => void;
@@ -154,36 +156,18 @@ export default function BonDeSortieDetails({
   );
 
   // Recherche automatique du nom en mode "Se Connecter"
-  useEffect(() => {
-    if (!form.values.matricule || type === "Créer un compte") {
-      setUserName("");
-      return;
-    }
-
-    const timeoutId = setTimeout(async () => {
-      setLoadingName(true);
-      try {
-        const res = await fetch("/api/utilisateurs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            matricule,
-            password,
-            mode: "checkbox",
-            checkboxId: 1,
-          }),
-        });
-        const data = await res.json();
-        setUserName(res.ok ? data.name : "Utilisateur non trouvé");
-      } catch {
-        setUserName("Erreur de connexion");
-      } finally {
-        setLoadingName(false);
-      }
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [form.values.matricule, type]);
+  // NOTE: si tu veux l'auto-lookup, utilise `matricule` local (défini plus bas) ou form.values.*.
+  // Ici je le laisse désactivé pour éviter des fetchs incohérents pendant l'édition.
+  useEffect(
+    () => {
+      // example placeholder if you want to enable lookup:
+      // if (!form.values.matricule || type === "Créer un compte") return;
+      // ...call API avec form.values.matricule...
+    },
+    [
+      /* form.values.matricule, type - active si voulu */
+    ]
+  );
 
   // Modal
   const [opened, setOpened] = useState(false);
@@ -191,16 +175,25 @@ export default function BonDeSortieDetails({
   const [matricule, setMatricule] = useState("");
   const [password, setPassword] = useState("");
 
-  // Ouverture du modal selon la case cliquée
+  // pour gérer reset seulement quand on entre en edition
+  const prevIsEditingRef = useRef<boolean>(isEditing);
+
   const handleCheckboxClick = (index: number) => {
+    // sécurité : plus rien si non éditable
+    if (!isEditing) return;
+
+    // Bloquer si déjà confirmé
     if (
-      (index === 1 && !locked1) ||
-      (index === 2 && !locked2) ||
-      (index === 3 && !locked3)
+      (index === 1 && locked1) ||
+      (index === 2 && locked2) ||
+      (index === 3 && locked3)
     ) {
-      setActiveCheckbox(index);
-      setOpened(true);
+      // debug possible : console.log("checkbox blocked", index);
+      return;
     }
+
+    setActiveCheckbox(index);
+    setOpened(true);
   };
 
   // Validation connexion
@@ -221,23 +214,35 @@ export default function BonDeSortieDetails({
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message);
+        alert(data.message || "Authentification échouée");
         return;
       }
 
-      // 🔹 On met à jour le nom et lock la checkbox
-      if (activeCheckbox === 1) setCheck1(true), setLocked1(true);
-      if (activeCheckbox === 2) setCheck2(true), setLocked2(true);
-      if (activeCheckbox === 3) setCheck3(true), setLocked3(true);
-
+      // Mise à jour safe : on met le nom et on lock la checkbox correspondante
       setCheckerNames((prev) => ({
         ...prev,
-        [activeCheckbox!]: data.user.nom,
+        [activeCheckbox!]: data.user?.nom ?? data.name ?? "Utilisateur",
       }));
 
+      // Verrouillage et check via updates distincts
+      if (activeCheckbox === 1) {
+        setLocked1(true);
+        setCheck1(true);
+      } else if (activeCheckbox === 2) {
+        setLocked2(true);
+        setCheck2(true);
+      } else if (activeCheckbox === 3) {
+        setLocked3(true);
+        setCheck3(true);
+      }
+
+      // fermer modal et nettoyer
       setOpened(false);
       setActiveCheckbox(null);
-      alert(`Confirmé par ${data.user.nom}`);
+      setMatricule("");
+      setPassword("");
+
+      alert(`Confirmé par ${data.user?.nom ?? data.name ?? "Utilisateur"}`);
     } catch (err) {
       console.error(err);
       alert("Erreur serveur");
@@ -261,74 +266,10 @@ export default function BonDeSortieDetails({
   const [unite, setUnite] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
-  if (selectedBonDeSortie) {
-    setPiece(selectedBonDeSortie.piece ?? undefined);
-    setManuelle(selectedBonDeSortie.manuelle);
-    setMagasinValue(selectedBonDeSortie?.magasin ?? "");
-    setDateSortie(selectedBonDeSortie?.dateSortie ?? "");
-    setDepartementValue(selectedBonDeSortie?.departement ?? "");
-    setAtelierValue(selectedBonDeSortie?.atelier ?? "");
-    setDepotValue(selectedBonDeSortie?.depot ?? "");
-    setSecteurValue(selectedBonDeSortie?.secteur ?? "");
-    setCodeArticle(selectedBonDeSortie.codeArticle);
-    setLibelleArticle(selectedBonDeSortie.libelleArticle);
-    setQuantite(selectedBonDeSortie.quantite);
-    setImputation(selectedBonDeSortie.imputation);
-    setImputationCode(selectedBonDeSortie.imputationCode);
-    setCommande(selectedBonDeSortie.commande);
-    setUnite(selectedBonDeSortie.unite);
-
-    // ⚡ Restaurer les cases et noms
-    setCheck1(selectedBonDeSortie.check1 ?? false);
-    setCheck2(selectedBonDeSortie.check2 ?? false);
-    setCheck3(selectedBonDeSortie.check3 ?? false);
-    setLocked1(selectedBonDeSortie.locked1 ?? false);
-    setLocked2(selectedBonDeSortie.locked2 ?? false);
-    setLocked3(selectedBonDeSortie.locked3 ?? false);
-    setCheckerNames(selectedBonDeSortie.checkerNames ?? {});
-  } else if (isEditing) {
-    // 🔄 RESET complet quand nouveau
-    setPiece(undefined);
-    setManuelle(undefined);
-    setMagasin("");
-    setDateSortie("");
-    setDepartement("");
-    setAtelier("");
-    setDepot("");
-    setSecteur("");
-    setCodeArticle("");
-    setLibelleArticle("");
-    setQuantite(undefined);
-    setImputation("");
-    setImputationCode("");
-    setCommande("");
-    setUnite("");
-
-    // ✅ Reset cases et noms
-    setCheck1(false);
-    setCheck2(false);
-    setCheck3(false);
-    setLocked1(false);
-    setLocked2(false);
-    setLocked3(false);
-    setCheckerNames({});
-  }
-}, [selectedBonDeSortie, isEditing]);
-
-  const [modalFor, setModalFor] = useState<number | null>(null);
-
-  const handleCloseModal = () => {
-    setModalFor(null);
-    setMatricule("");
-    setPassword("");
-  };
-
- const handleSave = async () => {
-  // Préparer les données à envoyer
-  const bonData = {
-    piece: piece || 0,
-    manuelle: manuelle || 0,
+  const bonData: BonDeSortie = {
+    id: selectedBonDeSortie?.id ?? 0,
+    piece: piece ?? 0, // <-- ici on remplace undefined par 0
+    manuelle: manuelle ?? 0, // <-- idem
     magasin: magasinValue || "",
     depot: depotValue || "",
     dateSortie: dateSortie || "",
@@ -337,7 +278,7 @@ export default function BonDeSortieDetails({
     secteur: secteurValue || "",
     codeArticle: codeArticle || "",
     libelleArticle: libelleArticle || "",
-    quantite: quantite || 0,
+    quantite: quantite ?? 0, // idem pour quantite
     imputation: imputation || "",
     imputationCode: imputationCode || "",
     commande: commande || "",
@@ -351,35 +292,159 @@ export default function BonDeSortieDetails({
     checkerNames,
   };
 
-  try {
-    const res = await fetch("/api/bonDeSortie", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bonData),
-    });
+  useEffect(() => {
+    // Si on charge un bon existant -> restaurer tout (y compris locks)
+    if (selectedBonDeSortie) {
+      setPiece(selectedBonDeSortie.piece ?? undefined);
+      setManuelle(selectedBonDeSortie.manuelle);
+      setMagasinValue(selectedBonDeSortie?.magasin ?? "");
+      setDateSortie(selectedBonDeSortie?.dateSortie ?? "");
+      setDepartementValue(selectedBonDeSortie?.departement ?? "");
+      setAtelierValue(selectedBonDeSortie?.atelier ?? "");
+      setDepotValue(selectedBonDeSortie?.depot ?? "");
+      setSecteurValue(selectedBonDeSortie?.secteur ?? "");
+      setCodeArticle(selectedBonDeSortie.codeArticle ?? "");
+      setLibelleArticle(selectedBonDeSortie.libelleArticle ?? "");
+      setQuantite(selectedBonDeSortie.quantite ?? undefined);
+      setImputation(selectedBonDeSortie.imputation ?? "");
+      setImputationCode(selectedBonDeSortie.imputationCode ?? "");
+      setCommande(selectedBonDeSortie.commande ?? "");
+      setUnite(selectedBonDeSortie.unite ?? "");
 
-    const result = await res.json();
-
-    if (!res.ok) {
-      alert(result.message || "Erreur lors de l’enregistrement");
+      // Restaurer cases et locks depuis l'objet
+      setCheck1(selectedBonDeSortie.check1 ?? false);
+      setCheck2(selectedBonDeSortie.check2 ?? false);
+      setCheck3(selectedBonDeSortie.check3 ?? false);
+      setLocked1(selectedBonDeSortie.locked1 ?? false);
+      setLocked2(selectedBonDeSortie.locked2 ?? false);
+      setLocked3(selectedBonDeSortie.locked3 ?? false);
+      setCheckerNames(selectedBonDeSortie.checkerNames ?? {});
+      prevIsEditingRef.current = isEditing;
       return;
     }
 
-    // 🔹 Mettre à jour la liste des bons de sortie
-   // Correct : recrée le tableau complet
-setBonsDeSortie([...BonsDeSortie, result.bonDeSortie]);
+    // Si on vient d'entrer en mode édition (false -> true), on reset le formulaire
+    if (isEditing && !prevIsEditingRef.current) {
+      setPiece(undefined);
+      setManuelle(undefined);
+      setMagasin("");
+      setDateSortie("");
+      setDepartement("");
+      setAtelier("");
+      setDepot("");
+      setSecteur("");
+      setCodeArticle("");
+      setLibelleArticle("");
+      setQuantite(undefined);
+      setImputation("");
+      setImputationCode("");
+      setCommande("");
+      setUnite("");
 
+      // reset des checks/locks pour un nouveau bon
+      setCheck1(false);
+      setCheck2(false);
+      setCheck3(false);
+      setLocked1(false);
+      setLocked2(false);
+      setLocked3(false);
+      setCheckerNames({});
+    }
 
+    prevIsEditingRef.current = isEditing;
+  }, [selectedBonDeSortie, isEditing]);
 
-    // Optionnel : reset formulaire si nécessaire
-    setSubmitted(true);
-    alert("Bon de sortie enregistré avec succès !");
-  } catch (err) {
-    console.error(err);
-    alert("Erreur de connexion au serveur");
-  }
-};
+  const [modalFor, setModalFor] = useState<number | null>(null);
 
+  const handleCloseModal = () => {
+    // fermer et nettoyer activeCheckbox aussi
+    setOpened(false);
+    setActiveCheckbox(null);
+    setModalFor(null);
+    setMatricule("");
+    setPassword("");
+  };
+
+  const handleSave = async () => {
+    const bonData = {
+      piece: piece || 0,
+      manuelle: manuelle || 0,
+      magasin: magasinValue || "",
+      depot: depotValue || "",
+      dateSortie: dateSortie || "",
+      departement: departementValue || "",
+      atelier: atelierValue || "",
+      secteur: secteurValue || "",
+      codeArticle: codeArticle || "",
+      libelleArticle: libelleArticle || "",
+      quantite: quantite || 0,
+      imputation: imputation || "",
+      imputationCode: imputationCode || "",
+      commande: commande || "",
+      unite: unite || "",
+      check1,
+      check2,
+      check3,
+      locked1,
+      locked2,
+      locked3,
+      checkerNames,
+    };
+
+    try {
+      // POST pour créer un nouveau bon
+      const res = await fetch("/api/bonDeSortie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bonData),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        alert(result.message || "Erreur lors de l’enregistrement");
+        return;
+      }
+
+      // ✅ mettre à jour l'état correctement
+      setBonsDeSortie((prev) => [...prev, result.bonDeSortie]);
+
+      setSubmitted(true);
+      alert("Bon de sortie enregistré avec succès !");
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de connexion au serveur");
+    }
+  };
+
+  const handleUpdate = async (bon: BonDeSortie) => {
+    try {
+      const res = await fetch("/api/bonDeSortie", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bon),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        alert(result.message || "Erreur lors de la mise à jour");
+        return;
+      }
+
+      // 🔹 remplacer le bon existant dans l'état
+      setBonsDeSortie((prev) =>
+        prev.map((b) =>
+          b.id === result.bonDeSortie.id ? result.bonDeSortie : b
+        )
+      );
+
+      alert("Bon de sortie mis à jour avec succès !");
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de connexion au serveur");
+    }
+  };
 
   return (
     <ScrollArea h={800} type="scroll">
@@ -584,22 +649,33 @@ setBonsDeSortie([...BonsDeSortie, result.bonDeSortie]);
           disabled={!isEditing}
         />
 
-        <Checkbox
-          label={
-            <>
-              Magasinier{" "}
-              {checkerNames[1] && (
-                <Text span c="black" ml={5}>
-                  {checkerNames[1]}
-                </Text>
-              )}
-            </>
-          }
-          checked={check1}
-          onChange={() => handleCheckboxClick(1)}
-          disabled={locked1 || !isEditing}
-          mt="sm"
-        />
+        <Group>
+          <Checkbox
+            label={
+              <>
+                Magasinier{" "}
+                
+              </>
+            }
+            checked={check1}
+            onChange={(e) => {
+              if (locked1 || !isEditing) {
+                e.preventDefault();
+                return;
+              }
+              handleCheckboxClick(1);
+            }}
+            disabled={!isEditing || locked1}
+            mt="sm"
+          />
+
+          <TextInput
+            value={checkerNames[1] ?? ""}
+            placeholder="Non confirmé"
+            readOnly
+            style={{ flex: 1 }}
+          />
+        </Group>
 
         <Checkbox
           label={
@@ -610,11 +686,22 @@ setBonsDeSortie([...BonsDeSortie, result.bonDeSortie]);
                   {checkerNames[2]}
                 </Text>
               )}
+              {locked2 && (
+                <Text span ml={6}>
+                  🔒
+                </Text>
+              )}
             </>
           }
           checked={check2}
-          onChange={() => handleCheckboxClick(2)}
-          disabled={locked2 || !isEditing}
+          onChange={(e) => {
+            if (locked2 || !isEditing) {
+              e.preventDefault();
+              return;
+            }
+            handleCheckboxClick(2);
+          }}
+          disabled={!isEditing || locked2}
           mt="sm"
         />
 
@@ -627,11 +714,22 @@ setBonsDeSortie([...BonsDeSortie, result.bonDeSortie]);
                   {checkerNames[3]}
                 </Text>
               )}
+              {locked3 && (
+                <Text span ml={6}>
+                  🔒
+                </Text>
+              )}
             </>
           }
           checked={check3}
-          onChange={() => handleCheckboxClick(3)}
-          disabled={locked3 || !isEditing}
+          onChange={(e) => {
+            if (locked3 || !isEditing) {
+              e.preventDefault();
+              return;
+            }
+            handleCheckboxClick(3);
+          }}
+          disabled={!isEditing || locked3}
           mt="sm"
         />
 
@@ -668,7 +766,44 @@ setBonsDeSortie([...BonsDeSortie, result.bonDeSortie]);
 
         {isEditing && (
           <Group>
-            <Button color="#c94B06" onClick={handleSave} mt="sm">
+            <Button
+              color="#c94B06"
+              onClick={() => {
+                const bonData = {
+                  piece,
+                  manuelle,
+                  magasin: magasinValue || "",
+                  depot: depotValue || "",
+                  dateSortie,
+                  departement: departementValue || "",
+                  atelier: atelierValue || "",
+                  secteur: secteurValue || "",
+                  codeArticle,
+                  libelleArticle,
+                  quantite: quantite || 0,
+                  imputation,
+                  imputationCode,
+                  commande,
+                  unite,
+                  check1,
+                  check2,
+                  check3,
+                  locked1,
+                  locked2,
+                  locked3,
+                  checkerNames,
+                };
+
+                if (selectedBonDeSortie) {
+                  // On modifie un bon existant
+                  handleUpdate({ ...bonData, id: selectedBonDeSortie.id });
+                } else {
+                  // On crée un nouveau bon
+                  handleSave();
+                }
+              }}
+              mt="sm"
+            >
               Enregistrer
             </Button>
           </Group>

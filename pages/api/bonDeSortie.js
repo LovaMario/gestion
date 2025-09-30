@@ -32,15 +32,13 @@ export default async function handler(req, res) {
         check1,
         check2,
         check3,
-        locked1,
-        locked2,
-        locked3,
+        checkerNames // <-- bien récupérer depuis le front
       } = req.body;
 
       await db.query(
         `INSERT INTO bon_de_sortie
-        (piece, manuelle, magasin, depot, dateSortie, departement, atelier, secteur, codeArticle, libelleArticle, quantite, imputation, imputationCode, commande, unite, check1, check2, check3)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (piece, manuelle, magasin, depot, dateSortie, departement, atelier, secteur, codeArticle, libelleArticle, quantite, imputation, imputationCode, commande, unite, check1, check2, check3, checker1_nom, checker2_nom, checker3_nom)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           piece,
           manuelle,
@@ -60,13 +58,20 @@ export default async function handler(req, res) {
           check1,
           check2,
           check3,
+          checkerNames?.[1] || null, // <-- utiliser optional chaining pour éviter undefined
+          checkerNames?.[2] || null,
+          checkerNames?.[3] || null
         ]
       );
 
-      return res.status(201).json({ message: "Bon de sortie enregistré avec succès" });
+      return res
+        .status(201)
+        .json({ message: "Bon de sortie enregistré avec succès" });
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Erreur serveur lors de l’enregistrement" });
+      console.error("Erreur POST:", error);
+      return res
+        .status(500)
+        .json({ message: "Erreur serveur lors de l’enregistrement" });
     }
   }
 
