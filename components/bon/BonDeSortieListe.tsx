@@ -1,7 +1,7 @@
+// BonDeSortieListe.tsx (CODE CORRIGÉ)
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { BonDeSortie } from "./BonDeSortie";
+import React, { useState } from "react";
 import {
   Card,
   Table,
@@ -15,46 +15,36 @@ import {
   Loader,
 } from "@mantine/core";
 import { IconPencil } from "@tabler/icons-react";
+import { BonDeSortie } from "./BonDeSortie";
 
 type Props = {
+  setSelectedBonDeSortie: React.Dispatch<
+    React.SetStateAction<BonDeSortie | null>
+  >;
+  setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   bonsDeSortie: BonDeSortie[];
   setBonsDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie[]>>;
-  setSelectedBonDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie | null>>;
-  setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
+  loading: boolean; // 🎯 AJOUTÉ : L'état de chargement vient du parent
 };
-
 
 export default function BonDeSortieListe({
   setSelectedBonDeSortie,
   setIsEditing,
-}: Props) {
-  const [bonsDeSortie, setBonsDeSortie] = useState<BonDeSortie[]>([]);
+  bonsDeSortie,
+  loading, // Récupération de l'état de chargement du parent
+}: Props & { loading: boolean }) {
+  // Ajout de 'loading' pour le type check
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  // 🔹 Récupération depuis la base via API
-  useEffect(() => {
-    const fetchBons = async () => {
-      try {
-        const res = await fetch("/api/bonDeSortie");
-        if (!res.ok) throw new Error("Erreur lors du fetch");
-        const data = await res.json();
-        setBonsDeSortie(data);
-      } catch (err) {
-        console.error("Erreur chargement BSM :", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBons();
-  }, []);
+  // ❌ L'useEffect pour le fetch a été supprimé ! C'est le rôle du composant parent.
 
   const filteredBons = bonsDeSortie.filter((b) =>
     b.codeArticle?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
+    // Affiche le loader si le parent indique qu'il charge
     return (
       <Card shadow="xl" radius="lg" p="md" m={10}>
         <Group justify="center">
@@ -73,6 +63,7 @@ export default function BonDeSortieListe({
     );
   }
 
+  // ... (Reste du rendu inchangé) ...
   return (
     <Card shadow="sm" radius="md" p="md" m={10}>
       <Title order={3} mb="md">
@@ -93,26 +84,36 @@ export default function BonDeSortieListe({
       ) : (
         <ScrollArea h={650}>
           <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+            <thead>
+              <tr>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   Code article
                 </th>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   N° Pièce
                 </th>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   N° pièce manuelle
                 </th>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   Quantité
                 </th>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   Actions
                 </th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
+              </tr>
+            </thead>
+            <tbody>
               {filteredBons.map((bon) => (
                 <tr
                   key={bon.id}
@@ -122,19 +123,44 @@ export default function BonDeSortieListe({
                     setIsEditing(false);
                   }}
                 >
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     {bon.codeArticle}
                   </td>
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     {bon.piece}
                   </td>
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     {bon.manuelle}
                   </td>
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     {bon.quantite}
                   </td>
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     <Group gap="xs" justify="center">
                       <Tooltip label="Modifier" withArrow>
                         <ActionIcon
@@ -154,7 +180,7 @@ export default function BonDeSortieListe({
                   </td>
                 </tr>
               ))}
-            </Table.Tbody>
+            </tbody>
           </Table>
         </ScrollArea>
       )}

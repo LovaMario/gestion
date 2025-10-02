@@ -21,6 +21,10 @@ import { IMaskInput } from "react-imask";
 import { useForm } from "@mantine/form";
 import { useToggle } from "@mantine/hooks";
 
+// NOTE: Les props BonsDeSortie et setBonsDeSortie ne sont plus nécessaires
+// dans BonDeSortieDetails car la communication vers le parent se fait
+// exclusivement par onSaveAndReturn. Je les ai laissés pour la compatibilité
+// de type si elles sont utilisées ailleurs, mais la fonction les ignore.
 type Props = {
   BonsDeSortie: BonDeSortie[];
   setBonsDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie[]>>;
@@ -30,38 +34,45 @@ type Props = {
   >;
   isEditing: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
-  onSaveAndReturn: (updatedBon: BonDeSortie) => void;
+  onSaveAndReturn: (
+    updatedBon: BonDeSortie,
+    shouldExitEditing?: boolean
+  ) => void;
 };
+
+// Fonction utilitaire pour générer un nouveau numéro (à adapter si nécessaire)
+// const generateNewNumero = () => new Date().getTime().toString(); // Non utilisée
 
 export default function BonDeSortieDetails({
   BonsDeSortie,
   setBonsDeSortie,
   selectedBonDeSortie,
+  setSelectedBonDeSortie,
   isEditing,
+  onSaveAndReturn,
+  setIsEditing,
 }: Props) {
-  //Magasin
+  // --- ÉTATS & HOOKS ---
   const [magasinOptions, setMagasinOption] = useState(["Central", "Vato"]);
   const [magasinValue, setMagasinValue] = useState<string | null>(null);
   const [magasinInput, setMagasinInput] = useState("");
   const [type, toggle] = useToggle(["Se connecter", "Créer un compte"]);
 
-  const [userName, setUserName] = useState("");
-  const [loadingName, setLoadingName] = useState(false);
-
   const form = useForm({
     initialValues: { matricule: "", name: "", password: "" },
     validate: {
+      // ... validation logique ...
       matricule: (val) => (val.length > 0 ? null : "Matricule obligatoire"),
       password: (val) =>
         val.length < 6
           ? "Le mot de passe doit contenir au moins 6 caractères"
           : null,
       name: (val) =>
-        type === "Créer un compte" && val.length < 3
-          ? "Le nom est requis"
-          : null,
+        type === "Créer un compte" && val.length < 3 ? "Le nom est requis" : null,
     },
   });
+
+  // Suppression de la fonction handleSaveAndReturn locale ici ❌
 
   const handleMagasinKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>
@@ -74,7 +85,7 @@ export default function BonDeSortieDetails({
     }
   };
 
-  //Depot
+  // --- DEPOT ---
   const [depotOptions, setDepotOptions] = useState(["Central", "Vato"]);
   const [depotValue, setDepotValue] = useState<string | null>(null);
   const [depotInput, setDepotInput] = useState("");
@@ -87,7 +98,7 @@ export default function BonDeSortieDetails({
     }
   };
 
-  // Département
+  // --- DÉPARTEMENT ---
   const [departementOptions, setDepartementOptions] = useState([
     "Fer",
     "Central",
@@ -107,11 +118,8 @@ export default function BonDeSortieDetails({
     }
   };
 
-  //   Atelier
-  const [atelierOptions, setAtelierOptions] = useState([
-    "Automatique",
-    "Jour forcé",
-  ]);
+  // --- ATELIER ---
+  const [atelierOptions, setAtelierOptions] = useState(["Automatique", "Jour forcé"]);
   const [atelierValue, setAtelierValue] = useState<string | null>(null);
   const [atelierInput, setAtelierInput] = useState("");
 
@@ -126,11 +134,8 @@ export default function BonDeSortieDetails({
     }
   };
 
-  //   Secteur
-  const [secteurOptions, setSecteurOptions] = useState([
-    "Automatique",
-    "Jour forcé",
-  ]);
+  // --- SECTEUR ---
+  const [secteurOptions, setSecteurOptions] = useState(["Automatique", "Jour forcé"]);
   const [secteurValue, setSecteurValue] = useState<string | null>(null);
   const [secteurInput, setSecteurInput] = useState("");
 
@@ -145,6 +150,28 @@ export default function BonDeSortieDetails({
     }
   };
 
+  // --- IMPUTATION CODE ---
+  const [ImputationCodeOptions, setImputationCodeOptions] = useState([
+    "Automatique",
+    "Jour forcé",
+  ]);
+  const [ImputationCodeValue, setImputationCodeValue] = useState<string | null>(
+    null
+  );
+  const [ImputationCodeInput, setImputationCodeInput] = useState("");
+
+  const handleImputationCodeKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (event.key === "Enter" && ImputationCodeInput.trim() !== "") {
+      if (!ImputationCodeOptions.includes(ImputationCodeInput)) {
+        setImputationCodeOptions((prev) => [...prev, ImputationCodeInput]);
+        setImputationCodeValue(ImputationCodeInput);
+      }
+    }
+  };
+
+  // --- ÉTATS CHECKBOX ---
   const [check1, setCheck1] = useState(false);
   const [check2, setCheck2] = useState(false);
   const [check3, setCheck3] = useState(false);
@@ -154,109 +181,17 @@ export default function BonDeSortieDetails({
   const [checkerNames, setCheckerNames] = useState<{ [key: number]: string }>(
     {}
   );
-
-  // Recherche automatique du nom en mode "Se Connecter"
-  // NOTE: si tu veux l'auto-lookup, utilise `matricule` local (défini plus bas) ou form.values.*.
-  // Ici je le laisse désactivé pour éviter des fetchs incohérents pendant l'édition.
-  useEffect(
-    () => {
-      // example placeholder if you want to enable lookup:
-      // if (!form.values.matricule || type === "Créer un compte") return;
-      // ...call API avec form.values.matricule...
-    },
-    [
-      /* form.values.matricule, type - active si voulu */
-    ]
-  );
-
-  // Modal
+  
+  // --- ÉTATS MODAL/CONNEXION ---
   const [opened, setOpened] = useState(false);
   const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
   const [matricule, setMatricule] = useState("");
   const [password, setPassword] = useState("");
-
-  // pour gérer reset seulement quand on entre en edition
-  const prevIsEditingRef = useRef<boolean>(isEditing);
-
-  const handleCheckboxClick = (index: number) => {
-    // sécurité : plus rien si non éditable
-    if (!isEditing) return;
-
-    // Bloquer si déjà confirmé
-    if (
-      (index === 1 && locked1) ||
-      (index === 2 && locked2) ||
-      (index === 3 && locked3)
-    ) {
-      // debug possible : console.log("checkbox blocked", index);
-      return;
-    }
-
-    setActiveCheckbox(index);
-    setOpened(true);
-  };
-
-  // Validation connexion
-  const handleLogin = async () => {
-    if (!matricule || !password) return;
-
-    try {
-      const res = await fetch("/api/utilisateurs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          matricule,
-          password,
-          type: "Se Connecter",
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Authentification échouée");
-        return;
-      }
-
-      // Mise à jour safe : on met le nom et on lock la checkbox correspondante
-      setCheckerNames((prev) => ({
-        ...prev,
-        [activeCheckbox!]: data.user?.nom ?? data.name ?? "Utilisateur",
-      }));
-
-      // Verrouillage et check via updates distincts
-      if (activeCheckbox === 1) {
-        setLocked1(true);
-        setCheck1(true);
-      } else if (activeCheckbox === 2) {
-        setLocked2(true);
-        setCheck2(true);
-      } else if (activeCheckbox === 3) {
-        setLocked3(true);
-        setCheck3(true);
-      }
-
-      // fermer modal et nettoyer
-      setOpened(false);
-      setActiveCheckbox(null);
-      setMatricule("");
-      setPassword("");
-
-      alert(`Confirmé par ${data.user?.nom ?? data.name ?? "Utilisateur"}`);
-    } catch (err) {
-      console.error(err);
-      alert("Erreur serveur");
-    }
-  };
-
+  
+  // --- ÉTATS FORMULAIRE ---
   const [piece, setPiece] = useState<number | undefined>(undefined);
   const [manuelle, setManuelle] = useState<number | undefined>(undefined);
-  const [magasin, setMagasin] = useState("");
   const [dateSortie, setDateSortie] = useState("");
-  const [departement, setDepartement] = useState("");
-  const [atelier, setAtelier] = useState("");
-  const [depot, setDepot] = useState("");
-  const [secteur, setSecteur] = useState("");
   const [codeArticle, setCodeArticle] = useState("");
   const [libelleArticle, setLibelleArticle] = useState("");
   const [quantite, setQuantite] = useState<number | undefined>(undefined);
@@ -266,43 +201,70 @@ export default function BonDeSortieDetails({
   const [unite, setUnite] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const bonData: BonDeSortie = {
-    id: selectedBonDeSortie?.id ?? 0,
-    piece: piece ?? 0, // <-- ici on remplace undefined par 0
-    manuelle: manuelle ?? 0, // <-- idem
-    magasin: magasinValue || "",
-    depot: depotValue || "",
-    dateSortie: dateSortie || "",
-    departement: departementValue || "",
-    atelier: atelierValue || "",
-    secteur: secteurValue || "",
-    codeArticle: codeArticle || "",
-    libelleArticle: libelleArticle || "",
-    quantite: quantite ?? 0, // idem pour quantite
-    imputation: imputation || "",
-    imputationCode: imputationCode || "",
-    commande: commande || "",
-    unite: unite || "",
-    check1,
-    check2,
-    check3,
-    locked1,
-    locked2,
-    locked3,
-    checkerNames,
+  // pour gérer reset seulement quand on entre en edition
+  const prevIsEditingRef = useRef<boolean>(isEditing);
+
+  // --- GESTION MODAL ---
+  const [modalFor, setModalFor] = useState<number | null>(null);
+
+  const handleCheckboxClick = (index: number) => {
+    if (!isEditing) return;
+    setActiveCheckbox(index);
+    setOpened(true);
   };
 
+  const handleCloseModal = () => {
+    setOpened(false);
+    setActiveCheckbox(null);
+    setModalFor(null);
+    setMatricule("");
+    setPassword("");
+  };
+  
+  // --- GESTION NOUVEAU BON ---
+  const handleNewBon = () => {
+    // Réinitialiser tous les états locaux pour un nouveau bon
+    setPiece(undefined);
+    setManuelle(undefined);
+    setMagasinValue(null);
+    setDepotValue(null);
+    setDateSortie("");
+    setDepartementValue(null);
+    setAtelierValue(null);
+    setSecteurValue(null);
+    setCodeArticle("");
+    setLibelleArticle("");
+    setQuantite(undefined);
+    setImputation("");
+    setImputationCode("");
+    setCommande("");
+    setUnite("");
+
+    setCheck1(false);
+    setCheck2(false);
+    setCheck3(false);
+    setLocked1(false);
+    setLocked2(false);
+    setLocked3(false);
+    setCheckerNames({});
+
+    // Passer en mode édition si ce n'est pas déjà le cas
+    setIsEditing(true);
+    setSubmitted(false);
+  };
+
+  // --- LOGIQUE USEEFFECT ---
   useEffect(() => {
-    // Si on charge un bon existant -> restaurer tout (y compris locks)
     if (selectedBonDeSortie) {
+      // Restaurer tous les champs du bon
       setPiece(selectedBonDeSortie.piece ?? undefined);
-      setManuelle(selectedBonDeSortie.manuelle);
-      setMagasinValue(selectedBonDeSortie?.magasin ?? "");
-      setDateSortie(selectedBonDeSortie?.dateSortie ?? "");
-      setDepartementValue(selectedBonDeSortie?.departement ?? "");
-      setAtelierValue(selectedBonDeSortie?.atelier ?? "");
-      setDepotValue(selectedBonDeSortie?.depot ?? "");
-      setSecteurValue(selectedBonDeSortie?.secteur ?? "");
+      setManuelle(selectedBonDeSortie.manuelle ?? undefined);
+      setMagasinValue(selectedBonDeSortie.magasin ?? "");
+      setDepotValue(selectedBonDeSortie.depot ?? "");
+      setDateSortie(selectedBonDeSortie.dateSortie ?? "");
+      setDepartementValue(selectedBonDeSortie.departement ?? "");
+      setAtelierValue(selectedBonDeSortie.atelier ?? "");
+      setSecteurValue(selectedBonDeSortie.secteur ?? "");
       setCodeArticle(selectedBonDeSortie.codeArticle ?? "");
       setLibelleArticle(selectedBonDeSortie.libelleArticle ?? "");
       setQuantite(selectedBonDeSortie.quantite ?? undefined);
@@ -311,64 +273,38 @@ export default function BonDeSortieDetails({
       setCommande(selectedBonDeSortie.commande ?? "");
       setUnite(selectedBonDeSortie.unite ?? "");
 
-      // Restaurer cases et locks depuis l'objet
+      // Restaurer l'état des checkboxes et verrouillages
       setCheck1(selectedBonDeSortie.check1 ?? false);
       setCheck2(selectedBonDeSortie.check2 ?? false);
       setCheck3(selectedBonDeSortie.check3 ?? false);
       setLocked1(selectedBonDeSortie.locked1 ?? false);
       setLocked2(selectedBonDeSortie.locked2 ?? false);
       setLocked3(selectedBonDeSortie.locked3 ?? false);
-      setCheckerNames(selectedBonDeSortie.checkerNames ?? {});
+
+      // Transformer les colonnes checkerX_nom en objet checkerNames
+      setCheckerNames({
+        1: selectedBonDeSortie.checker1_nom ?? "",
+        2: selectedBonDeSortie.checker2_nom ?? "",
+        3: selectedBonDeSortie.checker3_nom ?? "",
+      });
+
       prevIsEditingRef.current = isEditing;
-      return;
+    } else if (isEditing && !prevIsEditingRef.current) {
+      // Nouveau bon : reset complet du formulaire
+      handleNewBon(); // Utilise la fonction de reset
     }
-
-    // Si on vient d'entrer en mode édition (false -> true), on reset le formulaire
-    if (isEditing && !prevIsEditingRef.current) {
-      setPiece(undefined);
-      setManuelle(undefined);
-      setMagasin("");
-      setDateSortie("");
-      setDepartement("");
-      setAtelier("");
-      setDepot("");
-      setSecteur("");
-      setCodeArticle("");
-      setLibelleArticle("");
-      setQuantite(undefined);
-      setImputation("");
-      setImputationCode("");
-      setCommande("");
-      setUnite("");
-
-      // reset des checks/locks pour un nouveau bon
-      setCheck1(false);
-      setCheck2(false);
-      setCheck3(false);
-      setLocked1(false);
-      setLocked2(false);
-      setLocked3(false);
-      setCheckerNames({});
-    }
-
-    prevIsEditingRef.current = isEditing;
   }, [selectedBonDeSortie, isEditing]);
 
-  const [modalFor, setModalFor] = useState<number | null>(null);
 
-  const handleCloseModal = () => {
-    // fermer et nettoyer activeCheckbox aussi
-    setOpened(false);
-    setActiveCheckbox(null);
-    setModalFor(null);
-    setMatricule("");
-    setPassword("");
-  };
-
+  // --- GESTION ENREGISTREMENT (handleSave) ---
   const handleSave = async () => {
-    const bonData = {
-      piece: piece || 0,
-      manuelle: manuelle || 0,
+    const isUpdating = selectedBonDeSortie?.id !== undefined && selectedBonDeSortie.id !== 0;
+
+    // Préparer l'objet à envoyer en DB
+    const bonDataToSend = {
+      id: isUpdating ? selectedBonDeSortie?.id : undefined,
+      piece: piece ?? 0,
+      manuelle: manuelle ?? 0,
       magasin: magasinValue || "",
       depot: depotValue || "",
       dateSortie: dateSortie || "",
@@ -377,7 +313,7 @@ export default function BonDeSortieDetails({
       secteur: secteurValue || "",
       codeArticle: codeArticle || "",
       libelleArticle: libelleArticle || "",
-      quantite: quantite || 0,
+      quantite: quantite ?? 0,
       imputation: imputation || "",
       imputationCode: imputationCode || "",
       commande: commande || "",
@@ -385,18 +321,18 @@ export default function BonDeSortieDetails({
       check1,
       check2,
       check3,
-      locked1,
-      locked2,
-      locked3,
-      checkerNames,
+      checker1_nom: checkerNames[1] || null,
+      checker2_nom: checkerNames[2] || null,
+      checker3_nom: checkerNames[3] || null,
     };
 
+    const method = isUpdating ? "PUT" : "POST";
+
     try {
-      // POST pour créer un nouveau bon
       const res = await fetch("/api/bonDeSortie", {
-        method: "POST",
+        method: method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bonData),
+        body: JSON.stringify(bonDataToSend),
       });
 
       const result = await res.json();
@@ -406,46 +342,140 @@ export default function BonDeSortieDetails({
         return;
       }
 
-      // ✅ mettre à jour l'état correctement
-      setBonsDeSortie((prev) => [...prev, result.bonDeSortie]);
+      // 🎯 Utilisation de la prop onSaveAndReturn
+      onSaveAndReturn(result.bonDeSortie); 
 
       setSubmitted(true);
-      alert("Bon de sortie enregistré avec succès !");
+      alert(`Bon de sortie ${isUpdating ? 'modifié' : 'enregistré'} avec succès !`);
     } catch (err) {
       console.error(err);
       alert("Erreur de connexion au serveur");
     }
   };
 
-  const handleUpdate = async (bon: BonDeSortie) => {
+  // --- GESTION CONFIRMATION (handleConfirmChecker) ---
+  const handleConfirmChecker = async (checkboxIndex: number) => {
+    if (!matricule || !password) {
+      alert("Matricule et mot de passe requis");
+      return;
+    }
+
+    // --- 1. Autorisation par Matricule ---
+    const allowedAccounts: { [key: number]: string } = {
+      1: "5631", // Magasinier
+      2: "2i2", // Directeur
+      3: "2i33", // Chef
+    };
+
+    // ❌ Suppression de la redéfinition locale de handleSaveAndReturn ici ❌
+    
+    const inputMatricule = matricule.trim();
+
+    if (allowedAccounts[checkboxIndex] !== inputMatricule) {
+      alert("Votre matricule n'est pas autorisé à confirmer ce checkbox !");
+      setMatricule("");
+      setPassword("");
+      return;
+    }
+
     try {
-      const res = await fetch("/api/bonDeSortie", {
-        method: "PUT",
+      // --- 2. Authentification API ---
+      const res = await fetch("/api/utilisateurs", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bon),
+        body: JSON.stringify({
+          matricule: inputMatricule,
+          password,
+          type: "Se Connecter",
+        }),
       });
 
-      const result = await res.json();
-
+      const data = await res.json();
       if (!res.ok) {
-        alert(result.message || "Erreur lors de la mise à jour");
+        alert(
+          data.message || "Authentification échouée (Mot de passe incorrect ?)"
+        );
+        setMatricule("");
+        setPassword("");
         return;
       }
 
-      // 🔹 remplacer le bon existant dans l'état
-      setBonsDeSortie((prev) =>
-        prev.map((b) =>
-          b.id === result.bonDeSortie.id ? result.bonDeSortie : b
-        )
-      );
+      const userName = data.user?.nom ?? data.name ?? "Utilisateur";
 
-      alert("Bon de sortie mis à jour avec succès !");
+      // --- 3. Mise à jour de l'état local (Check et Lock) ---
+      let newCheck1 = check1,
+        newCheck2 = check2,
+        newCheck3 = check3;
+      let newLocked1 = locked1,
+        newLocked2 = locked2,
+        newLocked3 = locked3;
+
+      const newCheckerNames = { ...checkerNames };
+      newCheckerNames[checkboxIndex] = userName;
+
+      if (checkboxIndex === 1) {
+        newCheck1 = true;
+        newLocked1 = true;
+        setCheck1(true);
+        setLocked1(true);
+      } else if (checkboxIndex === 2) {
+        newCheck2 = true;
+        newLocked2 = true;
+        setCheck2(true);
+        setLocked2(true);
+      } else if (checkboxIndex === 3) {
+        newCheck3 = true;
+        newLocked3 = true;
+        setCheck3(true);
+        setLocked3(true);
+      }
+      setCheckerNames(newCheckerNames);
+
+      // --- 4. Mise à jour DB (PUT) ---
+      const bonId = selectedBonDeSortie?.id;
+
+      const putResponse = await fetch("/api/bonDeSortie", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: bonId,
+          // On envoie l'état mis à jour
+          check1: newCheck1,
+          check2: newCheck2,
+          check3: newCheck3,
+          locked1: newLocked1,
+          locked2: newLocked2,
+          locked3: newLocked3,
+          checker1_nom: newCheckerNames[1] || null,
+          checker2_nom: newCheckerNames[2] || null,
+          checker3_nom: newCheckerNames[3] || null,
+        }),
+      });
+
+      const putResult = await putResponse.json();
+
+      if (!putResponse.ok) {
+        alert(putResult.message || "Erreur lors de la mise à jour des checks.");
+        return;
+      }
+
+      // 🎯 Utilisation de la prop onSaveAndReturn
+      // On passe 'false' pour indiquer au parent de NE PAS sortir du mode édition
+      onSaveAndReturn(putResult.bonDeSortie, false); 
+
+      // --- 6. Fermer modal et reset ---
+      setOpened(false);
+      setActiveCheckbox(null);
+      setMatricule("");
+      setPassword("");
+      alert(`Confirmé par ${userName}`);
     } catch (err) {
       console.error(err);
-      alert("Erreur de connexion au serveur");
+      alert("Erreur serveur");
     }
   };
 
+  // --- RENDU ---
   return (
     <ScrollArea h={800} type="scroll">
       <Card shadow="xl" radius={"lg"} mb={8} m={10}>
@@ -623,13 +653,13 @@ export default function BonDeSortieDetails({
             size="sm"
             mt="sm"
             searchable
-            data={atelierOptions}
-            value={atelierValue}
-            onChange={setAtelierValue}
-            onSearchChange={setAtelierInput}
-            onKeyDown={handleAtelierKeyDown}
+            data={ImputationCodeOptions}
+            value={ImputationCodeValue}
+            onChange={setImputationCodeValue}
+            onSearchChange={setImputationCodeInput}
+            onKeyDown={handleImputationCodeKeyDown}
             disabled={!isEditing}
-            placeholder="Sélectionner ou ajouter un atelier"
+            placeholder="Sélectionner ou ajouter une imputation"
           />
 
           <TextInput
@@ -649,31 +679,28 @@ export default function BonDeSortieDetails({
           disabled={!isEditing}
         />
 
+        {/* 🎯 CHECKBOXES (ATTRIBUT DISABLED MIS À JOUR) */}
         <Group>
           <Checkbox
             label={
               <>
                 Magasinier{" "}
-                
+                {checkerNames[1] && (
+                  <Text span ml={5}>
+                    {checkerNames[1]}
+                  </Text>
+                )}{" "}
+                {(check1 || locked1) && (
+                  <Text span ml={6}>
+                    🔒 {checkerNames[1]}
+                  </Text>
+                )}
               </>
             }
             checked={check1}
-            onChange={(e) => {
-              if (locked1 || !isEditing) {
-                e.preventDefault();
-                return;
-              }
-              handleCheckboxClick(1);
-            }}
-            disabled={!isEditing || locked1}
+            onChange={() => handleCheckboxClick(1)}
+            disabled={!isEditing || check1 || locked1}
             mt="sm"
-          />
-
-          <TextInput
-            value={checkerNames[1] ?? ""}
-            placeholder="Non confirmé"
-            readOnly
-            style={{ flex: 1 }}
           />
         </Group>
 
@@ -686,22 +713,16 @@ export default function BonDeSortieDetails({
                   {checkerNames[2]}
                 </Text>
               )}
-              {locked2 && (
+              {(check2 || locked2) && (
                 <Text span ml={6}>
-                  🔒
+                  🔒 {checkerNames[2]}
                 </Text>
               )}
             </>
           }
           checked={check2}
-          onChange={(e) => {
-            if (locked2 || !isEditing) {
-              e.preventDefault();
-              return;
-            }
-            handleCheckboxClick(2);
-          }}
-          disabled={!isEditing || locked2}
+          onChange={() => handleCheckboxClick(2)}
+          disabled={!isEditing || check2 || locked2}
           mt="sm"
         />
 
@@ -714,24 +735,19 @@ export default function BonDeSortieDetails({
                   {checkerNames[3]}
                 </Text>
               )}
-              {locked3 && (
+              {(check3 || locked3) && (
                 <Text span ml={6}>
-                  🔒
+                  🔒 {checkerNames[3]}
                 </Text>
               )}
             </>
           }
           checked={check3}
-          onChange={(e) => {
-            if (locked3 || !isEditing) {
-              e.preventDefault();
-              return;
-            }
-            handleCheckboxClick(3);
-          }}
-          disabled={!isEditing || locked3}
+          onChange={() => handleCheckboxClick(3)}
+          disabled={!isEditing || check3 || locked3}
           mt="sm"
         />
+        {/* 🎯 FIN CHECKBOXES */}
 
         <Modal
           opened={opened}
@@ -741,24 +757,22 @@ export default function BonDeSortieDetails({
         >
           <TextInput
             label="Matricule"
-            placeholder="0000"
             value={matricule}
-            onChange={(I) => setMatricule(I.currentTarget.value)}
-            mb="sm"
+            onChange={(e) => setMatricule(e.currentTarget.value)}
           />
           <PasswordInput
             label="Mot de passe"
-            placeholder="Votre mot de passe"
             value={password}
             onChange={(e) => setPassword(e.currentTarget.value)}
-            mb="sm"
           />
-
-          <Group>
+          <Group mt="md" justify="flex-end">
             <Button variant="default" onClick={handleCloseModal}>
               Annuler
             </Button>
-            <Button onClick={handleLogin} color="#c94b06">
+            <Button
+              onClick={() => handleConfirmChecker(activeCheckbox!)}
+              color="#c94b06"
+            >
               Confirmer
             </Button>
           </Group>
@@ -768,40 +782,7 @@ export default function BonDeSortieDetails({
           <Group>
             <Button
               color="#c94B06"
-              onClick={() => {
-                const bonData = {
-                  piece,
-                  manuelle,
-                  magasin: magasinValue || "",
-                  depot: depotValue || "",
-                  dateSortie,
-                  departement: departementValue || "",
-                  atelier: atelierValue || "",
-                  secteur: secteurValue || "",
-                  codeArticle,
-                  libelleArticle,
-                  quantite: quantite || 0,
-                  imputation,
-                  imputationCode,
-                  commande,
-                  unite,
-                  check1,
-                  check2,
-                  check3,
-                  locked1,
-                  locked2,
-                  locked3,
-                  checkerNames,
-                };
-
-                if (selectedBonDeSortie) {
-                  // On modifie un bon existant
-                  handleUpdate({ ...bonData, id: selectedBonDeSortie.id });
-                } else {
-                  // On crée un nouveau bon
-                  handleSave();
-                }
-              }}
+              onClick={handleSave}
               mt="sm"
             >
               Enregistrer
