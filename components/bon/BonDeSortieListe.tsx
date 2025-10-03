@@ -24,27 +24,22 @@ type Props = {
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   bonsDeSortie: BonDeSortie[];
   setBonsDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie[]>>;
-  loading: boolean; // 🎯 AJOUTÉ : L'état de chargement vient du parent
+  loading: boolean;
 };
 
 export default function BonDeSortieListe({
   setSelectedBonDeSortie,
   setIsEditing,
   bonsDeSortie,
-  loading, // Récupération de l'état de chargement du parent
-}: Props & { loading: boolean }) {
-  // Ajout de 'loading' pour le type check
-
+  loading,
+}: Props) {
   const [searchTerm, setSearchTerm] = useState("");
-
-  // ❌ L'useEffect pour le fetch a été supprimé ! C'est le rôle du composant parent.
 
   const filteredBons = bonsDeSortie.filter((b) =>
     b.codeArticle?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
-    // Affiche le loader si le parent indique qu'il charge
     return (
       <Card shadow="xl" radius="lg" p="md" m={10}>
         <Group justify="center">
@@ -63,7 +58,6 @@ export default function BonDeSortieListe({
     );
   }
 
-  // ... (Reste du rendu inchangé) ...
   return (
     <Card shadow="sm" radius="md" p="md" m={10}>
       <Title order={3} mb="md">
@@ -114,9 +108,11 @@ export default function BonDeSortieListe({
               </tr>
             </thead>
             <tbody>
-              {filteredBons.map((bon) => (
+              {filteredBons.map((bon, index) => (
                 <tr
-                  key={bon.id}
+                  // 🎯 CORRECTION: Utilise bon.id s'il est valide (> 0), sinon utilise
+                  // une clé composite temporaire (ID de la pièce + index de la liste)
+                  key={bon.id && bon.id > 0 ? bon.id : `temp-${bon.piece}-${index}`}
                   style={{ cursor: "pointer" }}
                   onClick={() => {
                     setSelectedBonDeSortie(bon);

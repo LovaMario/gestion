@@ -77,29 +77,32 @@ export default function BonDeSortiePage() {
 
   // 🎯 DANS BonDeSortie.tsx (composant parent)
 
-  const handleSaveAndReturn = (
+  const handleSaveAndReturn = async (
     updatedBon: BonDeSortie,
     shouldExitEditing: boolean = true
   ) => {
-    setBonsDeSortie((prevBons) => {
-      // Déterminer si le bon existe déjà dans la liste par son ID
-      const isUpdate = prevBons.some(
-        (bon) => bon.id === updatedBon.id && updatedBon.id !== 0
-      );
-
-      if (isUpdate) {
-        // C'est une MODIFICATION (PUT): Mettre à jour l'élément existant
-        return prevBons.map((bon) =>
-          bon.id === updatedBon.id ? updatedBon : bon
-        );
-      } else {
-        // C'est une CRÉATION (POST): Ajouter le nouveau bon à la liste
-        return [updatedBon, ...prevBons];
-      }
-    });
+    // Recharge la liste depuis l'API pour éviter les doublons
+    try {
+      const res = await fetch("/api/bonDeSortie");
+      if (!res.ok) throw new Error("Erreur lors du fetch");
+      const data: BonDeSortie[] = await res.json();
+      const transformed = data.map((b) => ({
+        ...b,
+        checker1_nom: b.checker1_nom || null,
+        checker2_nom: b.checker2_nom || null,
+        checker3_nom: b.checker3_nom || null,
+        checkerNames: {
+          1: b.checker1_nom || "",
+          2: b.checker2_nom || "",
+          3: b.checker3_nom || "",
+        },
+      })) as BonDeSortie[];
+      setBonsDeSortie(transformed);
+    } catch (err) {
+      console.error("Erreur rechargement BSM :", err);
+    }
 
     setSelectedBonDeSortie(updatedBon);
-
     if (shouldExitEditing) {
       setIsEditing(false);
     }

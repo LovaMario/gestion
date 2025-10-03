@@ -2,30 +2,26 @@ import { db } from "../../lib/db";
 
 export default async function handler(req, res) {
   try {
-    // 🔹 Récupérer tous les bons de sortie
+    // 🔹 Récupérer tous les manifolds
     if (req.method === "GET") {
-      const [rows] = await db.query("SELECT * FROM bon_de_sortie");
+      const [rows] = await db.query("SELECT * FROM manifold");
       return res.status(200).json(rows);
     }
 
-    // 🔹 Créer un nouveau bon de sortie
+    // 🔹 Créer un nouveau manifold
     if (req.method === "POST") {
       const {
-        piece,
-        manuelle,
-        magasin,
-        depot,
-        dateSortie,
-        departement,
-        atelier,
-        secteur,
-        codeArticle,
-        libelleArticle,
+        Demandeur,
+        recepteur,
+        code1,
+        code2,
+        code3,
+        NomArticle,
+        finCompteur,
+        DPU,
+        dateCommande,
         quantite,
         imputation,
-        imputationCode,
-        commande,
-        unite,
         check1,
         check2,
         check3,
@@ -33,25 +29,21 @@ export default async function handler(req, res) {
       } = req.body;
 
       const [result] = await db.query(
-        `INSERT INTO bon_de_sortie 
-          (piece, manuelle, magasin, depot, dateSortie, departement, atelier, secteur, codeArticle, libelleArticle, quantite, imputation, imputationCode, commande, unite, check1, check2, check3, checker1_nom, checker2_nom, checker3_nom)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO manifold 
+          (Demandeur, recepteur, code1, code2, code3, NomArticle, finCompteur, DPU, dateCommande,  quantite, imputation)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          piece,
-          manuelle,
-          magasin,
-          depot,
-          dateSortie,
-          departement,
-          atelier,
-          secteur,
-          codeArticle,
-          libelleArticle,
+          Demandeur,
+          recepteur,
+          code1,
+          code2,
+          code3,
+          NomArticle,
+          finCompteur,
+          DPU,
+          dateCommande,
           quantite,
           imputation,
-          imputationCode,
-          commande,
-          unite,
           check1 ? 1 : 0,
           check2 ? 1 : 0,
           check3 ? 1 : 0,
@@ -62,23 +54,19 @@ export default async function handler(req, res) {
       );
 
       // renvoyer l'objet créé avec l'id
-      const bonDeSortie = {
+      const manifold = {
         id: result.insertId,
-        piece,
-        manuelle,
-        magasin,
-        depot,
-        dateSortie,
-        departement,
-        atelier,
-        secteur,
-        codeArticle,
-        libelleArticle,
+        Demandeur,
+        recepteur,
+        code1,
+        code2,
+        code3,
+        NomArticle,
+        finCompteur,
+        DPU,
+        dateCommande,
         quantite,
         imputation,
-        imputationCode,
-        commande,
-        unite,
         check1,
         check2,
         check3,
@@ -94,28 +82,24 @@ export default async function handler(req, res) {
 
       return res
         .status(201)
-        .json({ message: "Bon créé avec succès", bonDeSortie });
+        .json({ message: "Manifold créé avec succès", manifold });
     }
 
-    // 🔹 Mettre à jour un bon de sortie existant
+    // 🔹 Mettre à jour un manifold existant
     if (req.method === "PUT") {
       const {
         id,
-        piece,
-        manuelle,
-        magasin,
-        depot,
-        dateSortie,
-        departement,
-        atelier,
-        secteur,
-        codeArticle,
-        libelleArticle,
+        Demandeur,
+        recepteur,
+        code1,
+        code2,
+        code3,
+        NomArticle,
+        finCompteur,
+        DPU,
+        dateCommande,
         quantite,
         imputation,
-        imputationCode,
-        commande,
-        unite,
         check1,
         check2,
         check3,
@@ -129,29 +113,25 @@ export default async function handler(req, res) {
       } = req.body;
 
       await db.query(
-        `UPDATE bon_de_sortie SET
-          piece = ?, manuelle = ?, magasin = ?, depot = ?, dateSortie = ?, departement = ?,
-          atelier = ?, secteur = ?, codeArticle = ?, libelleArticle = ?, quantite = ?, 
-          imputation = ?, imputationCode = ?, commande = ?, unite = ?, 
+        `UPDATE manifold SET
+          Demandeur = ?, recepteur = ?, code1 = ?, code2 = ?, code3 = ?, NomArticle = ?,
+          finCompteur = ?, DPU = ?, dateCommande = ?, quantite = ?, 
+          imputation = ?,
           check1 = ?, check2 = ?, check3 = ?, 
           checker1_nom = ?, checker2_nom = ?, checker3_nom = ?
          WHERE id = ?`,
         [
-          piece,
-          manuelle,
-          magasin,
-          depot,
-          dateSortie,
-          departement,
-          atelier,
-          secteur,
-          codeArticle,
-          libelleArticle,
+          Demandeur,
+          recepteur,
+          code1,
+          code2,
+          code3,
+          NomArticle,
+          finCompteur,
+          DPU,
+          dateCommande,
           quantite,
           imputation,
-          imputationCode,
-          commande,
-          unite,
           check1 ? 1 : 0,
           check2 ? 1 : 0,
           check3 ? 1 : 0,
@@ -164,7 +144,7 @@ export default async function handler(req, res) {
           id,
         ]
       );
-      const updatedBonDeSortie = {
+      const updatedManifold = {
         ...req.body, // On prend tous les champs
         // On écrase l'objet temporaire 'checkerNames' et on ajoute les champs bruts
         checkerNames: {
@@ -178,8 +158,8 @@ export default async function handler(req, res) {
       };
 
       return res.status(200).json({
-        message: "Bon mis à jour avec succès",
-        bonDeSortie: updatedBonDeSortie,
+        message: "Manifold mis à jour avec succès",
+        manifold: updatedManifold,
       });
     }
 

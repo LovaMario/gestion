@@ -23,6 +23,9 @@ export type Manifold = {
   locked1: boolean;
   locked2: boolean;
   locked3: boolean;
+  checker1_nom: string | null;
+  checker2_nom: string | null;
+  checker3_nom: string | null;
 };
 
 export default function ManifoldPage() {

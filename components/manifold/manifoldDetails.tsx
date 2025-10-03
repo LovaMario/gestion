@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -15,6 +15,8 @@ import {
   Title,
 } from "@mantine/core";
 import { Manifold } from "./manifold";
+import { useForm } from "@mantine/form";
+import { useToggle } from "@mantine/hooks";
 
 type Props = {
   Manifold: Manifold[];
@@ -23,6 +25,7 @@ type Props = {
   setSelectedManifold: React.Dispatch<React.SetStateAction<Manifold | null>>;
   isEditing: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
+  onSaveAndReturn: (updatedmanifold: Manifold, shouldExitEditing?: boolean) => void;
 };
 
 export default function ManifoldDetails({
@@ -32,6 +35,7 @@ export default function ManifoldDetails({
   setSelectedManifold,
   isEditing,
   setIsEditing,
+  onSaveAndReturn
 }: Props) {
   // ✅ Checkboxes
   const [check1, setCheck1] = useState(false);
@@ -44,7 +48,9 @@ export default function ManifoldDetails({
     {}
   );
 
-  // Modal : null = fermé, 1|2|3 = pour la checkbox correspondante
+  // --- ÉTATS MODAL/CONNEXION ---
+  const [opened, setOpened] = useState(false);
+  const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
   const [modalFor, setModalFor] = useState<number | null>(null);
   const [matricule, setMatricule] = useState<string>("");
   const [password, setPassword] = useState("");
@@ -52,7 +58,7 @@ export default function ManifoldDetails({
   // Champs Manifold
   const [NomArticle, setNomArticle] = useState("");
   const [Demandeur, setDemandeur] = useState("");
-  const [recepteur, setRecepeteur] = useState("");
+  const [recepteur, setRecepteur] = useState("");
   const [Imputation, setImputation] = useState("");
   const [quantite, setQuantite] = useState<number | undefined>(undefined);
   const [code1, setCode1] = useState("");
@@ -63,12 +69,53 @@ export default function ManifoldDetails({
   const [dateCommande, setDateCommande] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  // pour gérer reset seulement quand on entre en edition
+    const prevIsEditingRef = useRef<boolean>(isEditing);
+
+
+    // --- GESTION MODAL ---
+    
+      const handleCheckboxClick = (index: number) => {
+        if (!isEditing) return;
+        setActiveCheckbox(index);
+        setOpened(true);
+      };
+
+       // --- GESTION NOUVEAU BON ---
+  const handleNewBon = () => {
+    // Réinitialiser tous les états locaux pour un nouveau bon
+    setDemandeur("");
+    setRecepteur("");
+    setRecepteur("");
+    setImputation("");
+    setCode1("");
+    setCode2("");
+    setCode3("");
+    setFinCompteur("");
+    setDPU("");
+    setDateCommande("");
+    setQuantite(undefined);
+    setNomArticle("");
+    setCheck1(false);
+    setCheck2(false);
+    setCheck3(false);
+    setLocked1(false);
+    setLocked2(false);
+    setLocked3(false);
+    setCheckerNames({});
+
+    // Passer en mode édition si ce n'est pas déjà le cas
+    setIsEditing(true);
+    setSubmitted(false);
+  };
+
+    
   // Initialisation ou reset
   useEffect(() => {
     if (selectedManifold) {
       setNomArticle(selectedManifold.NomArticle ?? "");
       setDemandeur(selectedManifold.Demandeur ?? "");
-      setRecepeteur(selectedManifold.recepteur ?? "");
+      setRecepteur(selectedManifold.recepteur ?? "");
       setImputation(selectedManifold.Imputation ?? "");
       setQuantite(selectedManifold.quantite ?? undefined);
       setCode1(selectedManifold.code1 ?? "");
@@ -84,10 +131,16 @@ export default function ManifoldDetails({
       setLocked2(selectedManifold.locked2 ?? false);
       setCheck3(selectedManifold.check3 ?? false);
       setLocked3(selectedManifold.locked3 ?? false);
+
+      setCheckerNames({
+        1: selectedManifold.checker1_nom ?? "",
+        2: selectedManifold.checker2_nom ?? "",
+        3: selectedManifold.checker3_nom ?? "",
+      });
     } else if (isEditing) {
       setNomArticle("");
       setDemandeur("");
-      setRecepeteur("");
+      setRecepteur("");
       setImputation("");
       setQuantite(undefined);
       setCode1("");
@@ -105,16 +158,136 @@ export default function ManifoldDetails({
     }
   }, [selectedManifold, isEditing]);
 
+  const handleConfirmChecker = async (checkboxIndex: number) => {
+    if (!matricule || !password) {
+      alert("Matricule et mot de passe requis");
+      return;
+    }
 
-  const handleCheckboxClick = (index: number) => {
-    if (
-      (index === 1 && !locked1) ||
-      (index === 2 && !locked2) ||
-      (index === 3 && !locked3)
-    ) {
-      setModalFor(index); // ✅ ouvrir le modal
+    // --- 1. Autorisation par Matricule ---
+    const allowedAccounts: { [key: number]: string } = {
+      1: "5631", // Magasinier
+      2: "2i2", // Directeur
+      3: "2i33", // Chef
+    };
+
+    const inputMatricule = matricule.trim();
+
+    if (allowedAccounts[checkboxIndex] !== inputMatricule) {
+      alert("Votre matricule n'est pas autorisé à confirmer ce checkbox !");
+      setMatricule("");
+      setPassword("");
+      return;
+    }
+
+    try {
+      // --- 2. Authentification API ---
+      const res = await fetch("/api/utilisateurs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matricule: inputMatricule,
+          password,
+          type: "Se Connecter",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(
+          data.message || "Authentification échouée (Mot de passe incorrect ?)"
+        );
+        setMatricule("");
+        setPassword("");
+        return;
+      }
+
+      const userName = data.user?.nom ?? data.name ?? "Utilisateur";
+
+      // --- 3. Mise à jour de l'état local (Check et Lock) ---
+      // Ces mises à jour d'état local sont cruciales
+      let newCheck1 = check1,
+        newCheck2 = check2,
+        newCheck3 = check3;
+      let newLocked1 = locked1,
+        newLocked2 = locked2,
+        newLocked3 = locked3;
+
+      const newCheckerNames = { ...checkerNames };
+      newCheckerNames[checkboxIndex] = userName;
+
+      if (checkboxIndex === 1) {
+        newCheck1 = true;
+        newLocked1 = true;
+        setCheck1(true);
+        setLocked1(true);
+      } else if (checkboxIndex === 2) {
+        newCheck2 = true;
+        newLocked2 = true;
+        setCheck2(true);
+        setLocked2(true);
+      } else if (checkboxIndex === 3) {
+        newCheck3 = true;
+        newLocked3 = true;
+        setCheck3(true);
+        setLocked3(true);
+      }
+      setCheckerNames(newCheckerNames);
+
+      // --- 4. Mise à jour DB (PUT) ---
+      const manifoldId = selectedManifold?.id;
+
+      // 💡 CORRECTION : Création d'un objet complet à envoyer
+      const manifoldDataToUpdate = {
+        id: manifoldId,
+        Demandeur: Demandeur || "",
+        recepteur: recepteur || "",
+        code1: code1 ?? 0,
+        code2: code2 ?? 0,
+        code3: code3 ?? 0,
+        NomArticle: NomArticle || "",
+        finCompteur: finCompteur || "",
+        DPU: DPU ?? 0,
+        dateCommande: dateCommande || "",
+        check1: newCheck1,
+        check2: newCheck2,
+        check3: newCheck3,
+        locked1: newLocked1,
+        locked2: newLocked2,
+        locked3: newLocked3,
+        checker1_nom: newCheckerNames[1] || null,
+        checker2_nom: newCheckerNames[2] || null,
+        checker3_nom: newCheckerNames[3] || null,
+
+        checkerNames: newCheckerNames,
+      };
+
+      const putResponse = await fetch("/api/manifoldDeSortie", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manifoldDataToUpdate), // Utilisez l'objet complet
+      });
+
+      const putResult = await putResponse.json();
+
+      if (!putResponse.ok) {
+        alert(putResult.message || "Erreur lors de la mise à jour des checks.");
+        return;
+      }
+
+      onSaveAndReturn(putResult.manifoldDeSortie, false);
+
+      setOpened(false);
+      setActiveCheckbox(null);
+      setMatricule("");
+      setPassword("");
+      alert(`Confirmé par ${userName}`);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur serveur");
     }
   };
+
 
   const handleCloseModal = () => {
     setModalFor(null);
@@ -211,7 +384,7 @@ export default function ManifoldDetails({
           <TextInput
             label="Recepteur"
             value={recepteur}
-            onChange={(d) => setRecepeteur(d.currentTarget.value)}
+            onChange={(d) => setRecepteur(d.currentTarget.value)}
             disabled={!isEditing}
             mt="sm"
           />
@@ -220,7 +393,7 @@ export default function ManifoldDetails({
             value={code2}
             onChange={(d) => setCode2(d.currentTarget.value)}
             disabled={!isEditing}
-             mt="sm"
+            mt="sm"
           />
         </Group>
 
@@ -230,14 +403,14 @@ export default function ManifoldDetails({
             value={Imputation}
             onChange={(d) => setImputation(d.currentTarget.value)}
             disabled={!isEditing}
-             mt="sm"
+            mt="sm"
           />
           <TextInput
             label="Code 3"
             value={code3}
             onChange={(d) => setCode3(d.currentTarget.value)}
             disabled={!isEditing}
-             mt="sm"
+            mt="sm"
           />
         </Group>
 
@@ -246,30 +419,33 @@ export default function ManifoldDetails({
           value={finCompteur}
           onChange={(d) => setFinCompteur(d.currentTarget.value)}
           disabled={!isEditing}
-           mt="sm"
+          mt="sm"
         />
         <NumberInput
           label="Quantité"
           value={quantite}
-          onChange={(v) =>
-            setQuantite(typeof v === "number" ? v : parseFloat(v))
-          }
+          onChange={(value: string | number) => {
+            const numberValue =
+              typeof value === "string" ? parseFloat(value) : value;
+            setQuantite(numberValue);
+          }}
+          mt="sm"
           disabled={!isEditing}
-           mt="sm"
         />
+
         <TextInput
           label="Nom Article"
           value={NomArticle}
           onChange={(d) => setNomArticle(d.currentTarget.value)}
           disabled={!isEditing}
-           mt="sm"
+          mt="sm"
         />
         <TextInput
           label="DPU"
           value={DPU}
           onChange={(d) => setDPU(d.currentTarget.value)}
           disabled={!isEditing}
-            mt="sm"
+          mt="sm"
         />
         <TextInput
           label="Date de commande"
@@ -277,7 +453,7 @@ export default function ManifoldDetails({
           value={dateCommande}
           onChange={(d) => setDateCommande(d.currentTarget.value)}
           disabled={!isEditing}
-           mt="sm"
+          mt="sm"
         />
 
         <Checkbox
@@ -285,15 +461,20 @@ export default function ManifoldDetails({
             <>
               Magasinier{" "}
               {checkerNames[1] && (
-                <Text span c="black" ml={5}>
+                <Text span ml={5}>
                   {checkerNames[1]}
+                </Text>
+              )}{" "}
+              {(check1 || locked1) && (
+                <Text span ml={6}>
+                  🔒
                 </Text>
               )}
             </>
           }
           checked={check1}
           onChange={() => handleCheckboxClick(1)}
-          disabled={locked1 || !isEditing}
+          disabled={!isEditing || check1 || locked1}
           mt="sm"
         />
         <Checkbox
@@ -305,11 +486,16 @@ export default function ManifoldDetails({
                   {checkerNames[2]}
                 </Text>
               )}
+              {(check2 || locked2) && (
+                <Text span ml={6}>
+                  🔒
+                </Text>
+              )}
             </>
           }
           checked={check2}
           onChange={() => handleCheckboxClick(2)}
-          disabled={locked2 || !isEditing}
+          disabled={!isEditing || check2 || locked2}
           mt="sm"
         />
         <Checkbox
@@ -321,40 +507,44 @@ export default function ManifoldDetails({
                   {checkerNames[3]}
                 </Text>
               )}
+              {(check3 || locked3) && (
+                <Text span ml={6}>
+                  🔒
+                </Text>
+              )}
             </>
           }
           checked={check3}
           onChange={() => handleCheckboxClick(3)}
-          disabled={locked3 || !isEditing}
+          disabled={!isEditing || check3 || locked3}
           mt="sm"
         />
 
         <Modal
-          opened={modalFor !== null}
+          opened={opened}
           onClose={handleCloseModal}
           title="Connexion"
           centered
         >
           <TextInput
             label="Matricule"
-            placeholder="0000"
             value={matricule}
-            onChange={(d) => setMatricule(d.currentTarget.value)}
-            mb="sm"
+            onChange={(e) => setMatricule(e.currentTarget.value)}
           />
           <PasswordInput
             label="Mot de passe"
-            placeholder="Mot de passe"
             value={password}
-            onChange={(d) => setPassword(d.currentTarget.value)}
-            mb="sm"
+            onChange={(e) => setPassword(e.currentTarget.value)}
           />
-          <Group>
+          <Group mt="md" justify="flex-end">
             <Button variant="default" onClick={handleCloseModal}>
               Annuler
             </Button>
-            <Button onClick={handleLogin} color="blue">
-              Se connecter
+            <Button
+              onClick={() => handleConfirmChecker(activeCheckbox!)}
+              color="#c94b06"
+            >
+              Confirmer
             </Button>
           </Group>
         </Modal>

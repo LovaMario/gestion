@@ -68,7 +68,9 @@ export default function BonDeSortieDetails({
           ? "Le mot de passe doit contenir au moins 6 caractères"
           : null,
       name: (val) =>
-        type === "Créer un compte" && val.length < 3 ? "Le nom est requis" : null,
+        type === "Créer un compte" && val.length < 3
+          ? "Le nom est requis"
+          : null,
     },
   });
 
@@ -119,7 +121,10 @@ export default function BonDeSortieDetails({
   };
 
   // --- ATELIER ---
-  const [atelierOptions, setAtelierOptions] = useState(["Automatique", "Jour forcé"]);
+  const [atelierOptions, setAtelierOptions] = useState([
+    "Automatique",
+    "Jour forcé",
+  ]);
   const [atelierValue, setAtelierValue] = useState<string | null>(null);
   const [atelierInput, setAtelierInput] = useState("");
 
@@ -135,7 +140,10 @@ export default function BonDeSortieDetails({
   };
 
   // --- SECTEUR ---
-  const [secteurOptions, setSecteurOptions] = useState(["Automatique", "Jour forcé"]);
+  const [secteurOptions, setSecteurOptions] = useState([
+    "Automatique",
+    "Jour forcé",
+  ]);
   const [secteurValue, setSecteurValue] = useState<string | null>(null);
   const [secteurInput, setSecteurInput] = useState("");
 
@@ -181,13 +189,13 @@ export default function BonDeSortieDetails({
   const [checkerNames, setCheckerNames] = useState<{ [key: number]: string }>(
     {}
   );
-  
+
   // --- ÉTATS MODAL/CONNEXION ---
   const [opened, setOpened] = useState(false);
   const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
   const [matricule, setMatricule] = useState("");
   const [password, setPassword] = useState("");
-  
+
   // --- ÉTATS FORMULAIRE ---
   const [piece, setPiece] = useState<number | undefined>(undefined);
   const [manuelle, setManuelle] = useState<number | undefined>(undefined);
@@ -220,7 +228,7 @@ export default function BonDeSortieDetails({
     setMatricule("");
     setPassword("");
   };
-  
+
   // --- GESTION NOUVEAU BON ---
   const handleNewBon = () => {
     // Réinitialiser tous les états locaux pour un nouveau bon
@@ -295,10 +303,10 @@ export default function BonDeSortieDetails({
     }
   }, [selectedBonDeSortie, isEditing]);
 
-
   // --- GESTION ENREGISTREMENT (handleSave) ---
   const handleSave = async () => {
-    const isUpdating = selectedBonDeSortie?.id !== undefined && selectedBonDeSortie.id !== 0;
+    const isUpdating =
+      selectedBonDeSortie?.id !== undefined && selectedBonDeSortie.id !== 0;
 
     // Préparer l'objet à envoyer en DB
     const bonDataToSend = {
@@ -315,15 +323,17 @@ export default function BonDeSortieDetails({
       libelleArticle: libelleArticle || "",
       quantite: quantite ?? 0,
       imputation: imputation || "",
-      imputationCode: imputationCode || "",
+      imputationCode: ImputationCodeValue || "",
       commande: commande || "",
       unite: unite || "",
       check1,
       check2,
       check3,
-      checker1_nom: checkerNames[1] || null,
-      checker2_nom: checkerNames[2] || null,
-      checker3_nom: checkerNames[3] || null,
+      locked1,
+      locked2,
+      locked3,
+
+      checkerNames: checkerNames,
     };
 
     const method = isUpdating ? "PUT" : "POST";
@@ -343,16 +353,19 @@ export default function BonDeSortieDetails({
       }
 
       // 🎯 Utilisation de la prop onSaveAndReturn
-      onSaveAndReturn(result.bonDeSortie); 
+      onSaveAndReturn(result.bonDeSortie);
 
       setSubmitted(true);
-      alert(`Bon de sortie ${isUpdating ? 'modifié' : 'enregistré'} avec succès !`);
+      alert(
+        `Bon de sortie ${isUpdating ? "modifié" : "enregistré"} avec succès !`
+      );
     } catch (err) {
       console.error(err);
       alert("Erreur de connexion au serveur");
     }
   };
 
+  // --- GESTION CONFIRMATION (handleConfirmChecker) ---
   // --- GESTION CONFIRMATION (handleConfirmChecker) ---
   const handleConfirmChecker = async (checkboxIndex: number) => {
     if (!matricule || !password) {
@@ -367,8 +380,6 @@ export default function BonDeSortieDetails({
       3: "2i33", // Chef
     };
 
-    // ❌ Suppression de la redéfinition locale de handleSaveAndReturn ici ❌
-    
     const inputMatricule = matricule.trim();
 
     if (allowedAccounts[checkboxIndex] !== inputMatricule) {
@@ -403,6 +414,7 @@ export default function BonDeSortieDetails({
       const userName = data.user?.nom ?? data.name ?? "Utilisateur";
 
       // --- 3. Mise à jour de l'état local (Check et Lock) ---
+      // Ces mises à jour d'état local sont cruciales
       let newCheck1 = check1,
         newCheck2 = check2,
         newCheck3 = check3;
@@ -434,22 +446,41 @@ export default function BonDeSortieDetails({
       // --- 4. Mise à jour DB (PUT) ---
       const bonId = selectedBonDeSortie?.id;
 
+      // 💡 CORRECTION : Création d'un objet complet à envoyer
+      const bonDataToUpdate = {
+        id: bonId,
+        piece: piece ?? 0,
+        manuelle: manuelle ?? 0,
+        magasin: magasinValue || "",
+        depot: depotValue || "",
+        dateSortie: dateSortie || "",
+        departement: departementValue || "",
+        atelier: atelierValue || "",
+        secteur: secteurValue || "",
+        codeArticle: codeArticle || "",
+        libelleArticle: libelleArticle || "",
+        quantite: quantite ?? 0,
+        imputation: imputation || "",
+        imputationCode: ImputationCodeValue || "",
+        commande: commande || "",
+        unite: unite || "",
+        check1: newCheck1,
+        check2: newCheck2,
+        check3: newCheck3,
+        locked1: newLocked1,
+        locked2: newLocked2,
+        locked3: newLocked3,
+        checker1_nom: newCheckerNames[1] || null,
+        checker2_nom: newCheckerNames[2] || null,
+        checker3_nom: newCheckerNames[3] || null,
+
+        checkerNames: newCheckerNames,
+      };
+
       const putResponse = await fetch("/api/bonDeSortie", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: bonId,
-          // On envoie l'état mis à jour
-          check1: newCheck1,
-          check2: newCheck2,
-          check3: newCheck3,
-          locked1: newLocked1,
-          locked2: newLocked2,
-          locked3: newLocked3,
-          checker1_nom: newCheckerNames[1] || null,
-          checker2_nom: newCheckerNames[2] || null,
-          checker3_nom: newCheckerNames[3] || null,
-        }),
+        body: JSON.stringify(bonDataToUpdate), // Utilisez l'objet complet
       });
 
       const putResult = await putResponse.json();
@@ -459,11 +490,8 @@ export default function BonDeSortieDetails({
         return;
       }
 
-      // 🎯 Utilisation de la prop onSaveAndReturn
-      // On passe 'false' pour indiquer au parent de NE PAS sortir du mode édition
-      onSaveAndReturn(putResult.bonDeSortie, false); 
+      onSaveAndReturn(putResult.bonDeSortie, false);
 
-      // --- 6. Fermer modal et reset ---
       setOpened(false);
       setActiveCheckbox(null);
       setMatricule("");
@@ -523,8 +551,6 @@ export default function BonDeSortieDetails({
             mt="sm"
             disabled={!isEditing}
           />
-        </Group>
-        <Group grow>
           <Select
             label="Magasin"
             size="sm"
@@ -664,8 +690,8 @@ export default function BonDeSortieDetails({
 
           <TextInput
             label="Imputation"
-            value={imputationCode}
-            onChange={(I) => setImputationCode(I.currentTarget.value)}
+            value={imputation}
+            onChange={(I) => setImputation(I.currentTarget.value)}
             mt="sm"
             disabled={!isEditing}
           />
@@ -692,7 +718,7 @@ export default function BonDeSortieDetails({
                 )}{" "}
                 {(check1 || locked1) && (
                   <Text span ml={6}>
-                    🔒 {checkerNames[1]}
+                    🔒
                   </Text>
                 )}
               </>
@@ -715,7 +741,7 @@ export default function BonDeSortieDetails({
               )}
               {(check2 || locked2) && (
                 <Text span ml={6}>
-                  🔒 {checkerNames[2]}
+                  🔒
                 </Text>
               )}
             </>
@@ -737,7 +763,7 @@ export default function BonDeSortieDetails({
               )}
               {(check3 || locked3) && (
                 <Text span ml={6}>
-                  🔒 {checkerNames[3]}
+                  🔒
                 </Text>
               )}
             </>
@@ -780,11 +806,7 @@ export default function BonDeSortieDetails({
 
         {isEditing && (
           <Group>
-            <Button
-              color="#c94B06"
-              onClick={handleSave}
-              mt="sm"
-            >
+            <Button color="#c94B06" onClick={handleSave} mt="sm">
               Enregistrer
             </Button>
           </Group>
