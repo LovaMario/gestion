@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AppShell,
   ScrollArea,
@@ -46,7 +46,20 @@ function MenuItem({ value, label, active, onClick, Icon }: any) {
 
 export default function NavbarGestion() {
   const [active, setActive] = useState("");
-  // Tableau des sections gestion
+  const [userName, setUserName] = useState("Gestion de stocks HAZOVATO");
+  useEffect(() => {
+    const updateUserName = () => {
+      const name = localStorage.getItem("userName");
+      setUserName(name && name.trim() !== "" ? name : "Gestion de stocks HAZOVATO");
+    };
+    updateUserName();
+    window.addEventListener("storage", updateUserName);
+    window.addEventListener("focus", updateUserName);
+    return () => {
+      window.removeEventListener("storage", updateUserName);
+      window.removeEventListener("focus", updateUserName);
+    };
+  }, []);
   const gestionData = [
     {
       value: "BonDeSortie",
@@ -69,8 +82,8 @@ export default function NavbarGestion() {
         style={{ borderRight: "1px solid #ddd" }}
       >
         <ScrollArea style={{ height: "calc(100vh - 160px)" }}>
-          <Group justify="center" m={20}>
-            <Text>Gestion de stocks HAZOVATO</Text>
+          <Group justify="center" m={20} >
+            <Title order={6} mt="sm">{userName}</Title>
           </Group>
           {gestionData.map((item) => (
             <MenuItem
