@@ -1,7 +1,7 @@
+// BonDeSortieListe.tsx (CODE CORRIGÉ)
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { BonDeSortie } from "./BonDeSortie";
+import React, { useState } from "react";
 import {
   Card,
   Table,
@@ -15,40 +15,25 @@ import {
   Loader,
 } from "@mantine/core";
 import { IconPencil } from "@tabler/icons-react";
+import { BonDeSortie } from "./BonDeSortie";
 
 type Props = {
+  setSelectedBonDeSortie: React.Dispatch<
+    React.SetStateAction<BonDeSortie | null>
+  >;
+  setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   bonsDeSortie: BonDeSortie[];
   setBonsDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie[]>>;
-  setSelectedBonDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie | null>>;
-  setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
+  loading: boolean;
 };
-
 
 export default function BonDeSortieListe({
   setSelectedBonDeSortie,
   setIsEditing,
+  bonsDeSortie,
+  loading,
 }: Props) {
-  const [bonsDeSortie, setBonsDeSortie] = useState<BonDeSortie[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  // 🔹 Récupération depuis la base via API
-  useEffect(() => {
-    const fetchBons = async () => {
-      try {
-        const res = await fetch("/api/bonDeSortie");
-        if (!res.ok) throw new Error("Erreur lors du fetch");
-        const data = await res.json();
-        setBonsDeSortie(data);
-      } catch (err) {
-        console.error("Erreur chargement BSM :", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBons();
-  }, []);
 
   const filteredBons = bonsDeSortie.filter((b) =>
     b.codeArticle?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -93,48 +78,85 @@ export default function BonDeSortieListe({
       ) : (
         <ScrollArea h={650}>
           <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+            <thead>
+              <tr>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   Code article
                 </th>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   N° Pièce
                 </th>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   N° pièce manuelle
                 </th>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   Quantité
                 </th>
-                <th style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   Actions
                 </th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {filteredBons.map((bon) => (
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBons.map((bon, index) => (
                 <tr
-                  key={bon.id}
+                  // 🎯 CORRECTION: Utilise bon.id s'il est valide (> 0), sinon utilise
+                  // une clé composite temporaire (ID de la pièce + index de la liste)
+                  key={bon.id && bon.id > 0 ? bon.id : `temp-${bon.piece}-${index}`}
                   style={{ cursor: "pointer" }}
                   onClick={() => {
                     setSelectedBonDeSortie(bon);
                     setIsEditing(false);
                   }}
                 >
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     {bon.codeArticle}
                   </td>
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     {bon.piece}
                   </td>
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     {bon.manuelle}
                   </td>
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     {bon.quantite}
                   </td>
-                  <td style={{ textAlign: "center", border: "1px solid #a59a9aff" }}>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
                     <Group gap="xs" justify="center">
                       <Tooltip label="Modifier" withArrow>
                         <ActionIcon
@@ -154,7 +176,7 @@ export default function BonDeSortieListe({
                   </td>
                 </tr>
               ))}
-            </Table.Tbody>
+            </tbody>
           </Table>
         </ScrollArea>
       )}

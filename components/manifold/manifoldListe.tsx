@@ -5,6 +5,7 @@ import {
   ActionIcon,
   Card,
   Group,
+  Loader,
   ScrollArea,
   Table,
   Text,
@@ -17,41 +18,49 @@ import { IconPencil } from "@tabler/icons-react";
 type Props = {
   Manifold: Manifold[];
   setManifold: React.Dispatch<React.SetStateAction<Manifold[]>>;
-  setSelectedManifold: (bon: Manifold) => void;
+  setSelectedManifold: (manifold: Manifold) => void;
   setIsEditing: (value: boolean) => void;
+  loading: boolean;
 };
 
 export default function ManifoldListe({
   Manifold,
   setSelectedManifold,
   setIsEditing,
+  loading,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filtredManifold = (Manifold ?? []).filter((m) => {
-    const term = searchTerm.toLowerCase();
-    return (
-      m.code1.toLowerCase().includes(term) ||
-      m.code2.toLowerCase().includes(term) ||
-      m.code3.toLowerCase().includes(term)
-    );
+  const filtredManifold = Manifold.filter((m) => {
+     return m.NomArticle?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  if (!Manifold || Manifold.length === 0) {
+  if (loading) {
     return (
       <Card shadow="sm" radius="md" p="md" m={10}>
-        <Text>Aucune commande enregistrée</Text>
+        <Group justify="center">
+          <Loader color="orange" />
+          <Text>Chargement des Manifold...</Text>
+        </Group>
       </Card>
     );
   }
+
+  if (Manifold.length === 0) {
+      return (
+        <Card shadow="sm" radius="md" p="md" m={10}>
+          <Text>Aucune Manifold enregistrée</Text>
+        </Card>
+      );
+    }
   return (
     <Card shadow="xl" radius="lg" p="md" m={10}>
       <Title order={3} mb="md">
-        Liste des commandes
+        Liste des Manifold
       </Title>
 
       <TextInput
-        placeholder="Rechercher par code."
+        placeholder="Nom de l'article"
         mb="md"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.currentTarget.value)}
@@ -59,7 +68,7 @@ export default function ManifoldListe({
 
       {filtredManifold.length === 0 ? (
         <Text c="dimmed" ta="center" py="xl">
-          Aucune BSM trouvée
+          Aucune Manifold trouvée
         </Text>
       ) : (
         <ScrollArea h={650}>
@@ -114,9 +123,9 @@ export default function ManifoldListe({
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {filtredManifold.map((Manifold) => (
+              {filtredManifold.map((Manifold, idx) => (
                 <tr
-                  key={Manifold.id}
+                  key={Manifold.id ?? `manifold-row-${idx}`}
                   style={{ cursor: "pointer" }}
                   onClick={() => {
                     setSelectedManifold(Manifold);
