@@ -1,6 +1,6 @@
 "use client";
 import { Button, Group } from "@mantine/core";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ManifoldDetails from "./manifoldDetails";
 import ManifoldListe from "./manifoldListe";
 
@@ -14,7 +14,7 @@ export type Manifold = {
   code1: string;
   code2: string;
   code3: string;
-  finCompteur: string;
+  finCompteur: number;
   DPU: string;
   dateCommande: string;
   check1: boolean;
@@ -35,6 +35,7 @@ export default function ManifoldPage() {
   };
 
   const [manifold, setManifold] = useState<Manifold[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedManifold, setSelectedManifold] = useState<Manifold | null>(
     null
   );
@@ -55,6 +56,23 @@ export default function ManifoldPage() {
     setSelectedManifold(updatedManifold);
     setIsEditing(false);
   };
+  // Charger les manifolds existants au montage
+  useEffect(() => {
+    const fetchManifolds = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/manifold");
+        const data = await res.json();
+        setManifold(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setManifold([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchManifolds();
+  }, []);
+
   return (
     <div>
       <Group>
@@ -84,6 +102,7 @@ export default function ManifoldPage() {
             setManifold={setManifold}
             setSelectedManifold={setSelectedManifold}
             setIsEditing={setIsEditing}
+            loading={loading}
           />
         </div>
       </div>

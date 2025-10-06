@@ -551,6 +551,8 @@ export default function BonDeSortieDetails({
             mt="sm"
             disabled={!isEditing}
           />
+          </Group>
+          <Group grow>
           <Select
             label="Magasin"
             size="sm"

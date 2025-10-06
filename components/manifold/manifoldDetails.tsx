@@ -25,7 +25,10 @@ type Props = {
   setSelectedManifold: React.Dispatch<React.SetStateAction<Manifold | null>>;
   isEditing: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
-  onSaveAndReturn: (updatedmanifold: Manifold, shouldExitEditing?: boolean) => void;
+  onSaveAndReturn: (
+    updatedmanifold: Manifold,
+    shouldExitEditing?: boolean
+  ) => void;
 };
 
 export default function ManifoldDetails({
@@ -35,7 +38,7 @@ export default function ManifoldDetails({
   setSelectedManifold,
   isEditing,
   setIsEditing,
-  onSaveAndReturn
+  onSaveAndReturn,
 }: Props) {
   // ✅ Checkboxes
   const [check1, setCheck1] = useState(false);
@@ -64,34 +67,33 @@ export default function ManifoldDetails({
   const [code1, setCode1] = useState("");
   const [code2, setCode2] = useState("");
   const [code3, setCode3] = useState("");
-  const [finCompteur, setFinCompteur] = useState("");
+  const [finCompteur, setFinCompteur] = useState<number | undefined>(undefined);
   const [DPU, setDPU] = useState("");
   const [dateCommande, setDateCommande] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   // pour gérer reset seulement quand on entre en edition
-    const prevIsEditingRef = useRef<boolean>(isEditing);
+  const prevIsEditingRef = useRef<boolean>(isEditing);
 
+  // --- GESTION MODAL ---
 
-    // --- GESTION MODAL ---
-    
-      const handleCheckboxClick = (index: number) => {
-        if (!isEditing) return;
-        setActiveCheckbox(index);
-        setOpened(true);
-      };
+  const handleCheckboxClick = (index: number) => {
+    if (!isEditing) return;
+    setActiveCheckbox(index);
+    setOpened(true);
+  };
 
-       // --- GESTION NOUVEAU BON ---
-  const handleNewBon = () => {
-    // Réinitialiser tous les états locaux pour un nouveau bon
+  // --- GESTION NOUVEAU BON ---
+
+  // Harmonisation avec BonDeSortieDetails
+  const handleNewManifold = () => {
     setDemandeur("");
-    setRecepteur("");
     setRecepteur("");
     setImputation("");
     setCode1("");
     setCode2("");
     setCode3("");
-    setFinCompteur("");
+    setFinCompteur(undefined);
     setDPU("");
     setDateCommande("");
     setQuantite(undefined);
@@ -102,14 +104,11 @@ export default function ManifoldDetails({
     setLocked1(false);
     setLocked2(false);
     setLocked3(false);
-    setCheckerNames({});
-
-    // Passer en mode édition si ce n'est pas déjà le cas
+    setCheckerNames({ 1: "", 2: "", 3: "" });
     setIsEditing(true);
     setSubmitted(false);
   };
 
-    
   // Initialisation ou reset
   useEffect(() => {
     if (selectedManifold) {
@@ -121,40 +120,22 @@ export default function ManifoldDetails({
       setCode1(selectedManifold.code1 ?? "");
       setCode2(selectedManifold.code2 ?? "");
       setCode3(selectedManifold.code3 ?? "");
-      setFinCompteur(selectedManifold.finCompteur ?? "");
+      setFinCompteur(selectedManifold.finCompteur ?? undefined);
       setDPU(selectedManifold.DPU ?? "");
       setDateCommande(selectedManifold.dateCommande ?? "");
-      // flags checkboxes si présents
       setCheck1(selectedManifold.check1 ?? false);
       setLocked1(selectedManifold.locked1 ?? false);
       setCheck2(selectedManifold.check2 ?? false);
       setLocked2(selectedManifold.locked2 ?? false);
       setCheck3(selectedManifold.check3 ?? false);
       setLocked3(selectedManifold.locked3 ?? false);
-
       setCheckerNames({
         1: selectedManifold.checker1_nom ?? "",
         2: selectedManifold.checker2_nom ?? "",
         3: selectedManifold.checker3_nom ?? "",
       });
     } else if (isEditing) {
-      setNomArticle("");
-      setDemandeur("");
-      setRecepteur("");
-      setImputation("");
-      setQuantite(undefined);
-      setCode1("");
-      setCode2("");
-      setCode3("");
-      setFinCompteur("");
-      setDPU("");
-      setDateCommande("");
-      setCheck1(false);
-      setLocked1(false);
-      setCheck2(false);
-      setLocked2(false);
-      setCheck3(false);
-      setLocked3(false);
+      handleNewManifold();
     }
   }, [selectedManifold, isEditing]);
 
@@ -234,53 +215,19 @@ export default function ManifoldDetails({
       }
       setCheckerNames(newCheckerNames);
 
-      // --- 4. Mise à jour DB (PUT) ---
-      const manifoldId = selectedManifold?.id;
-
-      // 💡 CORRECTION : Création d'un objet complet à envoyer
-      const manifoldDataToUpdate = {
-        id: manifoldId,
-        Demandeur: Demandeur || "",
-        recepteur: recepteur || "",
-        code1: code1 ?? 0,
-        code2: code2 ?? 0,
-        code3: code3 ?? 0,
-        NomArticle: NomArticle || "",
-        finCompteur: finCompteur || "",
-        DPU: DPU ?? 0,
-        dateCommande: dateCommande || "",
-        check1: newCheck1,
-        check2: newCheck2,
-        check3: newCheck3,
-        locked1: newLocked1,
-        locked2: newLocked2,
-        locked3: newLocked3,
-        checker1_nom: newCheckerNames[1] || null,
-        checker2_nom: newCheckerNames[2] || null,
-        checker3_nom: newCheckerNames[3] || null,
-
-        checkerNames: newCheckerNames,
-      };
-
-      const putResponse = await fetch("/api/manifoldDeSortie", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(manifoldDataToUpdate), // Utilisez l'objet complet
-      });
-
-      const putResult = await putResponse.json();
-
-      if (!putResponse.ok) {
-        alert(putResult.message || "Erreur lors de la mise à jour des checks.");
-        return;
-      }
-
-      onSaveAndReturn(putResult.manifoldDeSortie, false);
-
+      // --- 4. Mise à jour locale uniquement (pas d'enregistrement DB ici)
+      setCheck1(newCheck1);
+      setCheck2(newCheck2);
+      setCheck3(newCheck3);
+      setLocked1(newLocked1);
+      setLocked2(newLocked2);
+      setLocked3(newLocked3);
+      setCheckerNames(newCheckerNames);
       setOpened(false);
       setActiveCheckbox(null);
       setMatricule("");
       setPassword("");
+      setIsEditing(true);
       alert(`Confirmé par ${userName}`);
     } catch (err) {
       console.error(err);
@@ -288,8 +235,9 @@ export default function ManifoldDetails({
     }
   };
 
-
   const handleCloseModal = () => {
+    setOpened(false);
+    setActiveCheckbox(null);
     setModalFor(null);
     setMatricule("");
     setPassword("");
@@ -314,43 +262,53 @@ export default function ManifoldDetails({
     setPassword("");
   };
 
-  const handleSave = () => {
-    const manifoldData: Manifold = {
-      id: selectedManifold?.id ?? Date.now(),
-      NomArticle,
-      Demandeur,
-      recepteur,
-      Imputation,
+  // Nouvelle logique d'enregistrement harmonisée avec BonDeSortieDetails
+  const handleSave = async () => {
+    const isUpdating =
+      selectedManifold?.id !== undefined && selectedManifold.id !== 0;
+    const manifoldDataToSend = {
+      id: isUpdating ? selectedManifold?.id : undefined,
+      Demandeur: Demandeur || "",
+      recepteur: recepteur || "",
+      code1: code1 ?? 0,
+      code2: code2 ?? 0,
+      code3: code3 ?? 0,
+      NomArticle: NomArticle || "",
+      finCompteur: finCompteur || "",
+      DPU: DPU ?? 0,
+      dateCommande: dateCommande || "",
       quantite: quantite ?? 0,
-      code1,
-      code2,
-      code3,
-      finCompteur,
-      DPU,
-      dateCommande,
+      imputation: Imputation || "",
       check1,
       check2,
       check3,
       locked1,
       locked2,
       locked3,
+      checkerNames: checkerNames,
+      checker1_nom: checkerNames[1] || null,
+      checker2_nom: checkerNames[2] || null,
+      checker3_nom: checkerNames[3] || null,
     };
-
-    if (selectedManifold) {
-      const updatedList = Manifold.map((m) =>
-        m.id === selectedManifold.id ? manifoldData : m
-      );
-      setManifold(updatedList);
-      setSelectedManifold(manifoldData);
-    } else {
-      const newList = [...Manifold, manifoldData];
-      setManifold(newList);
-      setSelectedManifold(manifoldData);
+    const method = isUpdating ? "PUT" : "POST";
+    try {
+      const res = await fetch("/api/manifold", {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manifoldDataToSend),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        alert(result.message || "Erreur lors de l’enregistrement");
+        return;
+      }
+      onSaveAndReturn(result.manifold);
+      setSubmitted(true);
+      alert(`Manifold ${isUpdating ? "modifié" : "enregistré"} avec succès !`);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de connexion au serveur");
     }
-
-    setIsEditing(false);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
   };
 
   return (
@@ -414,12 +372,16 @@ export default function ManifoldDetails({
           />
         </Group>
 
-        <TextInput
+        <NumberInput
           label="Fin compteur"
           value={finCompteur}
-          onChange={(d) => setFinCompteur(d.currentTarget.value)}
-          disabled={!isEditing}
+          onChange={(value: string | number) => {
+            const numberValue =
+              typeof value === "string" ? parseFloat(value) : value;
+            setFinCompteur(numberValue);
+          }}
           mt="sm"
+          disabled={!isEditing}
         />
         <NumberInput
           label="Quantité"

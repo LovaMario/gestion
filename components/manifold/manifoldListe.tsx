@@ -32,7 +32,7 @@ export default function ManifoldListe({
   const [searchTerm, setSearchTerm] = useState("");
 
   const filtredManifold = Manifold.filter((m) => {
-    m.dateCommande?.toLowerCase().includes(searchTerm.toLowerCase());
+     return m.NomArticle?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   if (loading) {
@@ -60,7 +60,7 @@ export default function ManifoldListe({
       </Title>
 
       <TextInput
-        placeholder="Rechercher par date."
+        placeholder="Nom de l'article"
         mb="md"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.currentTarget.value)}
@@ -123,9 +123,9 @@ export default function ManifoldListe({
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {filtredManifold.map((Manifold) => (
+              {filtredManifold.map((Manifold, idx) => (
                 <tr
-                  key={Manifold.id}
+                  key={Manifold.id ?? `manifold-row-${idx}`}
                   style={{ cursor: "pointer" }}
                   onClick={() => {
                     setSelectedManifold(Manifold);
