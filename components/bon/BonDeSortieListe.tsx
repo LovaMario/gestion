@@ -37,6 +37,7 @@ export default function BonDeSortieListe({
 
   const filteredBons = bonsDeSortie.filter((b) =>
     b.codeArticle?.toLowerCase().includes(searchTerm.toLowerCase())
+    
   );
 
   if (loading) {
@@ -83,6 +84,11 @@ export default function BonDeSortieListe({
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
+                  N° BSM
+                </th>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
                   Code article
                 </th>
                 <th
@@ -119,6 +125,14 @@ export default function BonDeSortieListe({
                     setIsEditing(false);
                   }}
                 >
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
+                    {bon.id}
+                  </td>
                   <td
                     style={{
                       textAlign: "center",

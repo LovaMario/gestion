@@ -297,7 +297,7 @@ export default function BonDeSortieDetails({
       });
 
       prevIsEditingRef.current = isEditing;
-    } else if (isEditing && !prevIsEditingRef.current) {
+    } else if (isEditing) {
       // Nouveau bon : reset complet du formulaire
       handleNewBon(); // Utilise la fonction de reset
     }
@@ -737,7 +737,7 @@ export default function BonDeSortieDetails({
             <>
               Directeur{" "}
               {checkerNames[2] && (
-                <Text span c="black" ml={5}>
+                <Text span ml={5}>
                   {checkerNames[2]}
                 </Text>
               )}
@@ -759,7 +759,7 @@ export default function BonDeSortieDetails({
             <>
               Chef{" "}
               {checkerNames[3] && (
-                <Text span c="black" ml={5}>
+                <Text span ml={5}>
                   {checkerNames[3]}
                 </Text>
               )}

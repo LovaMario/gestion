@@ -15,6 +15,8 @@ import {
   IconSwitchHorizontal,
   IconDatabaseExport,
   IconDatabaseImport,
+  IconUserCircle,
+  IconPackageExport,
 } from "@tabler/icons-react";
 import BonDeSortiePage from "../bon/BonDeSortie";
 import ManifoldPage from "../manifold/manifold";
@@ -50,7 +52,9 @@ export default function NavbarGestion() {
   useEffect(() => {
     const updateUserName = () => {
       const name = localStorage.getItem("userName");
-      setUserName(name && name.trim() !== "" ? name : "Gestion de stocks HAZOVATO");
+      setUserName(
+        name && name.trim() !== "" ? name : "Gestion de stocks HAZOVATO"
+      );
     };
     updateUserName();
     window.addEventListener("storage", updateUserName);
@@ -64,7 +68,7 @@ export default function NavbarGestion() {
     {
       value: "BonDeSortie",
       label: "Bon de sortie",
-      Icon: IconDatabaseExport,
+      Icon: IconPackageExport,
       component: <BonDeSortiePage />,
     },
     {
@@ -81,10 +85,20 @@ export default function NavbarGestion() {
         w={{ base: 300 }}
         style={{ borderRight: "1px solid #ddd" }}
       >
-        <ScrollArea style={{ height: "calc(100vh - 160px)" }}>
-          <Group justify="center" m={20} >
-            <Title order={6} mt="sm">{userName}</Title>
-          </Group>
+        <Group justify="center">
+          <Title order={6} mt="sm">
+            GESTION DE STOCKS
+          </Title>
+        </Group>
+
+        <ScrollArea
+          style={{
+            height: "calc(100vh - 160px)",
+            marginTop: 20,
+            marginLeft: 15,
+            marginRight: 15,
+          }}
+        >
           {gestionData.map((item) => (
             <MenuItem
               key={item.value}
@@ -96,14 +110,19 @@ export default function NavbarGestion() {
             />
           ))}
         </ScrollArea>
-        <Box style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <Image src="/logo.png" alt="Logo" height={100} fit="contain" />
-          <Title order={6} mt="sm">
-            Gestion
-          </Title>
-        </Box>
+        <Group justify="center" mb={10}>
+          <Image src="logo.png" alt="Favicon" height={100} fit="contain" />
+        </Group>
+        <Group justify="center" ml={-30} grow>
+          <IconUserCircle style={{ marginRight: -70  }} />
+          <Title order={6}>{userName}</Title>
+        </Group>
 
-        <Group justify="column" gap="xs" style={{ marginTop: "auto" }}>
+        <Group
+          justify="column"
+          gap="xs"
+          style={{ marginTop: "auto", marginBottom: 20, margin: 20 }}
+        >
           <div
             onClick={() => (window.location.href = "/login")}
             style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
@@ -129,6 +148,7 @@ export default function NavbarGestion() {
           padding: "2rem",
           overflowY: "auto",
           marginLeft: "300px",
+          position: "relative",
         }}
       >
         {gestionData.find((d) => d.value === active)?.component ?? (

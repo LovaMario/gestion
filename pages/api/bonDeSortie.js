@@ -155,12 +155,9 @@ export default async function handler(req, res) {
           check1 ? 1 : 0,
           check2 ? 1 : 0,
           check3 ? 1 : 0,
-          locked1 ? 1 : 0, // 💡 AJOUTÉ
-          locked2 ? 1 : 0, // 💡 AJOUTÉ
-          locked3 ? 1 : 0, // 💡 AJOUTÉ
-          checker1_nom || null, // 💡 Utilise maintenant la valeur brute ou null
-          checker2_nom || null,
-          checker3_nom || null,
+          checkerNames?.[1] || null,
+          checkerNames?.[2] || null,
+          checkerNames?.[3] || null,
           id,
         ]
       );

@@ -444,7 +444,7 @@ export default function ManifoldDetails({
             <>
               Directeur{" "}
               {checkerNames[2] && (
-                <Text span c="black" ml={5}>
+                <Text span ml={5}>
                   {checkerNames[2]}
                 </Text>
               )}
@@ -465,7 +465,7 @@ export default function ManifoldDetails({
             <>
               Chef{" "}
               {checkerNames[3] && (
-                <Text span c="black" ml={5}>
+                <Text span ml={5}>
                   {checkerNames[3]}
                 </Text>
               )}
