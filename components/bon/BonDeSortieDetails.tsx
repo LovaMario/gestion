@@ -20,6 +20,7 @@ import {
 import { IMaskInput } from "react-imask";
 import { useForm } from "@mantine/form";
 import { useToggle } from "@mantine/hooks";
+import { useReactToPrint } from "react-to-print";
 
 // NOTE: Les props BonsDeSortie et setBonsDeSortie ne sont plus nécessaires
 // dans BonDeSortieDetails car la communication vers le parent se fait
@@ -29,7 +30,7 @@ type Props = {
   BonsDeSortie: BonDeSortie[];
   setBonsDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie[]>>;
   selectedBonDeSortie: BonDeSortie | null;
-  setSelectedBonDeSortie: React.Dispatch<
+   setSelectedBonDeSortie: React.Dispatch<
     React.SetStateAction<BonDeSortie | null>
   >;
   isEditing: boolean;
@@ -57,6 +58,14 @@ export default function BonDeSortieDetails({
   const [magasinValue, setMagasinValue] = useState<string | null>(null);
   const [magasinInput, setMagasinInput] = useState("");
   const [type, toggle] = useToggle(["Se connecter", "Créer un compte"]);
+  // --- IMPRESSION ---
+  const printRef = useRef<HTMLDivElement>(null);
+  const [piece, setPiece] = useState<number | undefined>(undefined);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Bon_de_Sortie_${typeof piece !== "undefined" ? piece : "Nouveau"}`,
+  } as any);
+
 
   const form = useForm({
     initialValues: { matricule: "", name: "", password: "" },
@@ -195,9 +204,7 @@ export default function BonDeSortieDetails({
   const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
   const [matricule, setMatricule] = useState("");
   const [password, setPassword] = useState("");
-
-  // --- ÉTATS FORMULAIRE ---
-  const [piece, setPiece] = useState<number | undefined>(undefined);
+  // Impression (unique)
   const [manuelle, setManuelle] = useState<number | undefined>(undefined);
   const [dateSortie, setDateSortie] = useState("");
   const [codeArticle, setCodeArticle] = useState("");
@@ -507,205 +514,208 @@ export default function BonDeSortieDetails({
   return (
     <ScrollArea h={800} type="scroll">
       <Card shadow="xl" radius={"lg"} mb={8} m={10}>
-        <Title order={3}>Bon de sortie</Title>
+        {/* 👇 Contenu à imprimer */}
+        <div ref={printRef}>
+          <Title order={3}>Bon de sortie</Title>
 
-        {submitted && (
-          <div style={{ color: "green", marginBottom: "1rem" }}>
-            La demande de bon de sortie a été enregistrée
-          </div>
-        )}
+          {submitted && (
+            <div style={{ color: "green", marginBottom: "1rem" }}>
+              La demande de bon de sortie a été enregistrée
+            </div>
+          )}
 
-        <Title order={4} mt="sm">
-          Entête
-        </Title>
-        <Group grow>
-          <NumberInput
-            label="N° Pièce"
-            value={piece}
-            onChange={(value: string | number) => {
-              const numberValue =
-                typeof value === "string" ? parseFloat(value) : value;
-              setPiece(numberValue);
-            }}
-            mt="sm"
-            disabled={!isEditing}
-          />
+          <Title order={4} mt="sm">
+            Entête
+          </Title>
+          <Group grow>
+            <NumberInput
+              label="N° Pièce"
+              value={piece}
+              onChange={(value: string | number) => {
+                const numberValue =
+                  typeof value === "string" ? parseFloat(value) : value;
+                setPiece(numberValue);
+              }}
+              mt="sm"
+              disabled={!isEditing}
+            />
 
-          <NumberInput
-            label="N° Pièce manuelle"
-            value={manuelle}
-            onChange={(value: string | number) => {
-              const numberValue =
-                typeof value === "string" ? parseFloat(value) : value;
-              setManuelle(numberValue);
-            }}
-            mt="sm"
-            disabled={!isEditing}
-          />
+            <NumberInput
+              label="N° Pièce manuelle"
+              value={manuelle}
+              onChange={(value: string | number) => {
+                const numberValue =
+                  typeof value === "string" ? parseFloat(value) : value;
+                setManuelle(numberValue);
+              }}
+              mt="sm"
+              disabled={!isEditing}
+            />
 
-          <TextInput
-            label="Date de sortie"
-            type="date"
-            value={dateSortie}
-            onChange={(d) => setDateSortie(d.currentTarget.value)}
-            mt="sm"
-            disabled={!isEditing}
-          />
+            <TextInput
+              label="Date de sortie"
+              type="date"
+              value={dateSortie}
+              onChange={(d) => setDateSortie(d.currentTarget.value)}
+              mt="sm"
+              disabled={!isEditing}
+            />
           </Group>
           <Group grow>
-          <Select
-            label="Magasin"
-            size="sm"
-            mt="sm"
-            searchable
-            data={magasinOptions}
-            value={magasinValue ?? ""}
-            onChange={setMagasinValue}
-            onSearchChange={setMagasinInput}
-            onKeyDown={handleMagasinKeyDown}
-            placeholder="Sélectionner un magasin"
-            disabled={!isEditing}
-          />
+            <Select
+              label="Magasin"
+              size="sm"
+              mt="sm"
+              searchable
+              data={magasinOptions}
+              value={magasinValue ?? ""}
+              onChange={setMagasinValue}
+              onSearchChange={setMagasinInput}
+              onKeyDown={handleMagasinKeyDown}
+              placeholder="Sélectionner un magasin"
+              disabled={!isEditing}
+            />
 
-          <Select
-            label="Depot"
-            size="sm"
-            mt="sm"
-            searchable
-            data={depotOptions}
-            value={depotValue ?? ""}
-            onChange={setDepotValue}
-            onSearchChange={setDepotInput}
-            onKeyDown={handleDepotKeyDown}
-            placeholder="Sélectionner ou ajouter un dépôt"
-            disabled={!isEditing}
-          />
+            <Select
+              label="Depot"
+              size="sm"
+              mt="sm"
+              searchable
+              data={depotOptions}
+              value={depotValue ?? ""}
+              onChange={setDepotValue}
+              onSearchChange={setDepotInput}
+              onKeyDown={handleDepotKeyDown}
+              placeholder="Sélectionner ou ajouter un dépôt"
+              disabled={!isEditing}
+            />
 
-          <Select
-            label="Département"
-            size="sm"
-            mt="sm"
-            searchable
-            data={departementOptions}
-            value={departementValue ?? ""}
-            onChange={setDepartementValue}
-            onSearchChange={setDepartementInput}
-            onKeyDown={handleDeparementKeyDown}
-            placeholder="Sélectionner ou ajouter un département"
-            disabled={!isEditing}
-          />
+            <Select
+              label="Département"
+              size="sm"
+              mt="sm"
+              searchable
+              data={departementOptions}
+              value={departementValue ?? ""}
+              onChange={setDepartementValue}
+              onSearchChange={setDepartementInput}
+              onKeyDown={handleDeparementKeyDown}
+              placeholder="Sélectionner ou ajouter un département"
+              disabled={!isEditing}
+            />
 
-          <Select
-            label="Secteur"
-            size="sm"
-            mt="sm"
-            searchable
-            data={secteurOptions}
-            value={secteurValue ?? ""}
-            onChange={setSecteurValue}
-            onSearchChange={setSecteurInput}
-            onKeyDown={handleSecteurKeyDown}
-            placeholder="Sélectionner ou ajouter un secteur"
-            disabled={!isEditing}
-          />
+            <Select
+              label="Secteur"
+              size="sm"
+              mt="sm"
+              searchable
+              data={secteurOptions}
+              value={secteurValue ?? ""}
+              onChange={setSecteurValue}
+              onSearchChange={setSecteurInput}
+              onKeyDown={handleSecteurKeyDown}
+              placeholder="Sélectionner ou ajouter un secteur"
+              disabled={!isEditing}
+            />
 
-          <Select
-            label="Atelier"
-            size="sm"
-            mt="sm"
-            searchable
-            data={atelierOptions}
-            value={atelierValue ?? ""}
-            onChange={setAtelierValue}
-            onSearchChange={setAtelierInput}
-            onKeyDown={handleAtelierKeyDown}
-            disabled={!isEditing}
-            placeholder="Sélectionner ou ajouter un atelier"
-          />
-        </Group>
+            <Select
+              label="Atelier"
+              size="sm"
+              mt="sm"
+              searchable
+              data={atelierOptions}
+              value={atelierValue ?? ""}
+              onChange={setAtelierValue}
+              onSearchChange={setAtelierInput}
+              onKeyDown={handleAtelierKeyDown}
+              disabled={!isEditing}
+              placeholder="Sélectionner ou ajouter un atelier"
+            />
+          </Group>
 
-        <Title order={4} mt="md">
-          Détails
-        </Title>
+          <Title order={4} mt="md">
+            Détails
+          </Title>
 
-        <Group grow gap={20}>
-          <Group gap="md" mb={-10}>
-            <Text w={120} fw={500} mb={-16}>
-              Code article
-            </Text>
-            <Input
-              component={IMaskInput}
-              mask="M****************************************************************************"
-              style={{ width: 400 }}
-              value={codeArticle}
-              onChange={(e: any) => setCodeArticle(e.target.value)}
+          <Group grow gap={20}>
+            <Group gap="md" mb={-10}>
+              <Text w={120} fw={500} mb={-16}>
+                Code article
+              </Text>
+              <Input
+                component={IMaskInput}
+                mask="M****************************************************************************"
+                style={{ width: 400 }}
+                value={codeArticle}
+                onChange={(e: any) => setCodeArticle(e.target.value)}
+                disabled={!isEditing}
+              />
+            </Group>
+
+            <TextInput
+              placeholder="Libellé de l'article"
+              label="Libellé article"
+              value={libelleArticle}
+              onChange={(d) => setLibelleArticle(d.currentTarget.value)}
+              mt="sm"
+              disabled={!isEditing}
+            />
+          </Group>
+
+          <Group>
+            <NumberInput
+              label="Quantité"
+              value={quantite}
+              onChange={(value: string | number) => {
+                const numberValue =
+                  typeof value === "string" ? parseFloat(value) : value;
+                setQuantite(numberValue);
+              }}
+              mt="sm"
+              disabled={!isEditing}
+            />
+
+            <TextInput
+              label="Unité"
+              value={unite}
+              onChange={(d) => setUnite(d.currentTarget.value)}
+              mt="sm"
+              disabled={!isEditing}
+            />
+          </Group>
+
+          <Group grow>
+            <Select
+              label="Imputée à:"
+              size="sm"
+              mt="sm"
+              searchable
+              data={ImputationCodeOptions}
+              value={ImputationCodeValue}
+              onChange={setImputationCodeValue}
+              onSearchChange={setImputationCodeInput}
+              onKeyDown={handleImputationCodeKeyDown}
+              disabled={!isEditing}
+              placeholder="Sélectionner ou ajouter une imputation"
+            />
+
+            <TextInput
+              label="Imputation"
+              value={imputation}
+              onChange={(I) => setImputation(I.currentTarget.value)}
+              mt="sm"
               disabled={!isEditing}
             />
           </Group>
 
           <TextInput
-            placeholder="Libellé de l'article"
-            label="Libellé article"
-            value={libelleArticle}
-            onChange={(d) => setLibelleArticle(d.currentTarget.value)}
+            label="Commande"
+            value={commande}
+            onChange={(c) => setCommande(c.currentTarget.value)}
             mt="sm"
             disabled={!isEditing}
           />
-        </Group>
-
-        <Group>
-          <NumberInput
-            label="Quantité"
-            value={quantite}
-            onChange={(value: string | number) => {
-              const numberValue =
-                typeof value === "string" ? parseFloat(value) : value;
-              setQuantite(numberValue);
-            }}
-            mt="sm"
-            disabled={!isEditing}
-          />
-
-          <TextInput
-            label="Unité"
-            value={unite}
-            onChange={(d) => setUnite(d.currentTarget.value)}
-            mt="sm"
-            disabled={!isEditing}
-          />
-        </Group>
-
-        <Group grow>
-          <Select
-            label="Imputée à:"
-            size="sm"
-            mt="sm"
-            searchable
-            data={ImputationCodeOptions}
-            value={ImputationCodeValue}
-            onChange={setImputationCodeValue}
-            onSearchChange={setImputationCodeInput}
-            onKeyDown={handleImputationCodeKeyDown}
-            disabled={!isEditing}
-            placeholder="Sélectionner ou ajouter une imputation"
-          />
-
-          <TextInput
-            label="Imputation"
-            value={imputation}
-            onChange={(I) => setImputation(I.currentTarget.value)}
-            mt="sm"
-            disabled={!isEditing}
-          />
-        </Group>
-
-        <TextInput
-          label="Commande"
-          value={commande}
-          onChange={(c) => setCommande(c.currentTarget.value)}
-          mt="sm"
-          disabled={!isEditing}
-        />
+        
 
         {/* 🎯 CHECKBOXES (ATTRIBUT DISABLED MIS À JOUR) */}
         <Group>
@@ -776,6 +786,7 @@ export default function BonDeSortieDetails({
           mt="sm"
         />
         {/* 🎯 FIN CHECKBOXES */}
+        </div>
 
         <Modal
           opened={opened}
@@ -808,6 +819,9 @@ export default function BonDeSortieDetails({
 
         {isEditing && (
           <Group>
+            <Button color="#63687c" onClick={handlePrint} mt="sm">
+              🖨️ Imprimer
+            </Button>
             <Button color="#c94B06" onClick={handleSave} mt="sm">
               Enregistrer
             </Button>

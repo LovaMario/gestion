@@ -1,6 +1,6 @@
 "use client";
-
 import React, { useEffect, useRef, useState } from "react";
+import { useReactToPrint } from "react-to-print";
 import {
   Button,
   Card,
@@ -40,6 +40,9 @@ export default function ManifoldDetails({
   setIsEditing,
   onSaveAndReturn,
 }: Props) {
+  // Impression
+  const printRef = useRef<HTMLDivElement>(null);
+  // ...existing code...
   // ✅ Checkboxes
   const [check1, setCheck1] = useState(false);
   const [locked1, setLocked1] = useState(false);
@@ -60,6 +63,10 @@ export default function ManifoldDetails({
 
   // Champs Manifold
   const [NomArticle, setNomArticle] = useState("");
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Manifold_${NomArticle ? NomArticle : "Nouveau"}`,
+  } as any);
   const [Demandeur, setDemandeur] = useState("");
   const [recepteur, setRecepteur] = useState("");
   const [Imputation, setImputation] = useState("");
@@ -314,12 +321,17 @@ export default function ManifoldDetails({
   return (
     <ScrollArea h={800} type="always">
       <Card shadow="xl" radius="lg" mb={8} m={10}>
-        <Title order={3}>Manifold</Title>
-        {submitted && (
-          <div style={{ color: "green", marginBottom: 10 }}>
-            Manifold enregistré !
-          </div>
-        )}
+        
+        {/* 👇 Contenu à imprimer */}
+        <div ref={printRef}>
+          <Title order={3}>Manifold</Title>
+          {submitted && (
+            <div style={{ color: "green", marginBottom: 10 }}>
+              Manifold enregistré !
+            </div>
+          )}
+          {/* ...le reste du contenu à imprimer... */}
+        
 
         <Group grow>
           <TextInput
@@ -482,6 +494,8 @@ export default function ManifoldDetails({
           mt="sm"
         />
 
+        </div>
+
         <Modal
           opened={opened}
           onClose={handleCloseModal}
@@ -513,6 +527,9 @@ export default function ManifoldDetails({
 
         {isEditing && (
           <Group>
+          <Button color="#63687c" onClick={handlePrint} mt={"sm"}>
+            🖨️ Imprimer
+          </Button>
             <Button color="#c94B06" onClick={handleSave} mt="sm">
               Enregistrer
             </Button>
