@@ -113,11 +113,6 @@ export default function ManifoldListe({
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
-                  Date
-                </th>
-                <th
-                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
-                >
                   Action
                 </th>
               </Table.Tr>
@@ -187,14 +182,6 @@ export default function ManifoldListe({
                     }}
                   >
                     {Manifold.NomArticle}
-                  </td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      border: "1px solid #a59a9aff",
-                    }}
-                  >
-                    {Manifold.dateCommande}
                   </td>
                   <td
                     style={{

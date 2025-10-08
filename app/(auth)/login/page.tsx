@@ -83,6 +83,9 @@ export default function LoginPage(props: PaperProps) {
 
       alert(data.message);
       if (type === "Se Connecter") {
+        if (data.name) {
+          localStorage.setItem("userName", data.name);
+        }
         window.location.href = "/dashboard";
       } else {
         toggle();
