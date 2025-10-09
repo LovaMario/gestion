@@ -97,7 +97,7 @@ export default function BonDeSortieDetails({
   };
 
   // --- DEPOT ---
-  const [depotOptions, setDepotOptions] = useState(["Central", "Vato"]);
+  const [depotOptions, setDepotOptions] = useState(["Central", "Vato","Mousse", "Fer"]);
   const [depotValue, setDepotValue] = useState<string | null>(null);
   const [depotInput, setDepotInput] = useState("");
   const handleDepotKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -131,8 +131,9 @@ export default function BonDeSortieDetails({
 
   // --- ATELIER ---
   const [atelierOptions, setAtelierOptions] = useState([
-    "Automatique",
-    "Jour forcé",
+    "Fer",
+    "Dall",
+    "Mousse",
   ]);
   const [atelierValue, setAtelierValue] = useState<string | null>(null);
   const [atelierInput, setAtelierInput] = useState("");
@@ -150,8 +151,9 @@ export default function BonDeSortieDetails({
 
   // --- SECTEUR ---
   const [secteurOptions, setSecteurOptions] = useState([
-    "Automatique",
-    "Jour forcé",
+    "AD",
+    "EII",
+    "DD",
   ]);
   const [secteurValue, setSecteurValue] = useState<string | null>(null);
   const [secteurInput, setSecteurInput] = useState("");
@@ -169,8 +171,9 @@ export default function BonDeSortieDetails({
 
   // --- IMPUTATION CODE ---
   const [ImputationCodeOptions, setImputationCodeOptions] = useState([
-    "Automatique",
-    "Jour forcé",
+    "Secteur",
+    "Commande",
+    "Code machine",
   ]);
   const [ImputationCodeValue, setImputationCodeValue] = useState<string | null>(
     null
@@ -515,7 +518,7 @@ export default function BonDeSortieDetails({
     <ScrollArea h={800} type="scroll">
       <Card shadow="xl" radius={"lg"} mb={8} m={10}>
         {/* 👇 Contenu à imprimer */}
-        <div ref={printRef}>
+        <div ref={printRef} className="print-area">
           <Title order={3}>Bon de sortie</Title>
 
           {submitted && (
@@ -819,11 +822,12 @@ export default function BonDeSortieDetails({
 
         {isEditing && (
           <Group>
+            
+            <Button color="#c94b06" onClick={handleSave} mt="sm">
+              Enregistrer
+            </Button>
             <Button color="#63687c" onClick={handlePrint} mt="sm">
               🖨️ Imprimer
-            </Button>
-            <Button color="#c94B06" onClick={handleSave} mt="sm">
-              Enregistrer
             </Button>
           </Group>
         )}

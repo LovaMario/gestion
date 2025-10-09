@@ -31,8 +31,12 @@ export default function ManifoldListe({
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filtredManifold = Manifold.filter((m) => {
-     return m.NomArticle?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filtredManifold = Manifold.filter((b) =>{
+    const term = searchTerm.toLowerCase();
+    return (
+      (b.NomArticle?.toLowerCase().includes(term)) ||
+      (b.id !== undefined && b.id !== null && b.id.toString().toLowerCase().includes(term))
+    );
   });
 
   if (loading) {

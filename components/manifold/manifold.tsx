@@ -10,7 +10,8 @@ export type Manifold = {
   NomArticle: string;
   Demandeur: string;
   recepteur: string;
-  Imputation: string;
+  imputation: string;
+  Imputation?: string;
   code1: string;
   code2: string;
   code3: string;

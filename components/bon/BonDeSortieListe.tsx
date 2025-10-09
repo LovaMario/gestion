@@ -35,10 +35,13 @@ export default function BonDeSortieListe({
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredBons = bonsDeSortie.filter((b) =>
-    b.codeArticle?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-  );
+  const filteredBons = bonsDeSortie.filter((b) =>{
+    const term = searchTerm.toLowerCase();
+    return (
+      (b.codeArticle?.toLowerCase().includes(term)) ||
+      (b.id !== undefined && b.id !== null && b.id.toString().toLowerCase().includes(term))
+    );
+  });
 
   if (loading) {
     return (
@@ -66,7 +69,7 @@ export default function BonDeSortieListe({
       </Title>
 
       <TextInput
-        placeholder="Rechercher par code article..."
+        placeholder="Rechercher par code article, ou numéro du BSM..."
         mb="md"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.currentTarget.value)}

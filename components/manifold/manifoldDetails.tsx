@@ -69,7 +69,7 @@ export default function ManifoldDetails({
   } as any);
   const [Demandeur, setDemandeur] = useState("");
   const [recepteur, setRecepteur] = useState("");
-  const [Imputation, setImputation] = useState("");
+  const [imputation, setImputation] = useState("");
   const [quantite, setQuantite] = useState<number | undefined>(undefined);
   const [code1, setCode1] = useState("");
   const [code2, setCode2] = useState("");
@@ -122,7 +122,7 @@ export default function ManifoldDetails({
       setNomArticle(selectedManifold.NomArticle ?? "");
       setDemandeur(selectedManifold.Demandeur ?? "");
       setRecepteur(selectedManifold.recepteur ?? "");
-      setImputation(selectedManifold.Imputation ?? "");
+  setImputation(selectedManifold.Imputation ?? selectedManifold.imputation ?? "");
       setQuantite(selectedManifold.quantite ?? undefined);
       setCode1(selectedManifold.code1 ?? "");
       setCode2(selectedManifold.code2 ?? "");
@@ -285,7 +285,7 @@ export default function ManifoldDetails({
       DPU: DPU ?? 0,
       dateCommande: dateCommande || "",
       quantite: quantite ?? 0,
-      imputation: Imputation || "",
+      imputation: imputation || "",
       check1,
       check2,
       check3,
@@ -321,9 +321,8 @@ export default function ManifoldDetails({
   return (
     <ScrollArea h={800} type="always">
       <Card shadow="xl" radius="lg" mb={8} m={10}>
-        
         {/* 👇 Contenu à imprimer */}
-        <div ref={printRef}>
+        <div ref={printRef} className="print-area">
           <Title order={3}>Manifold</Title>
           {submitted && (
             <div style={{ color: "green", marginBottom: 10 }}>
@@ -331,169 +330,173 @@ export default function ManifoldDetails({
             </div>
           )}
           {/* ...le reste du contenu à imprimer... */}
-        
 
-        <Group grow>
+          <Group grow>
+            <TextInput
+              placeholder="Nom de votre Atelier"
+              label="De"
+              value={Demandeur}
+              onChange={(d) => setDemandeur(d.currentTarget.value)}
+              disabled={!isEditing}
+              mt="sm"
+            />
+            <TextInput
+              placeholder="Inserer le code ici si necessaire"
+              label="Code 1"
+              value={code1}
+              onChange={(d) => setCode1(d.currentTarget.value)}
+              disabled={!isEditing}
+              mt="sm"
+            />
+          </Group>
+
+          <Group grow>
+            <TextInput
+              placeholder="Nom du recepteur"
+              label="À"
+              value={recepteur}
+              onChange={(d) => setRecepteur(d.currentTarget.value)}
+              disabled={!isEditing}
+              mt="sm"
+            />
+            <TextInput
+              placeholder="Inserer le code ici si necessaire"
+              label="Code 2"
+              value={code2}
+              onChange={(d) => setCode2(d.currentTarget.value)}
+              disabled={!isEditing}
+              mt="sm"
+            />
+          </Group>
+
+          <Group grow>
+            <TextInput
+              label="Imputation"
+              value={imputation}
+              onChange={(d) => setImputation(d.currentTarget.value)}
+              disabled={!isEditing}
+              mt="sm"
+            />
+            <TextInput
+              placeholder="Inserer le code ici si necessaire"
+              label="Code 3"
+              value={code3}
+              onChange={(d) => setCode3(d.currentTarget.value)}
+              disabled={!isEditing}
+              mt="sm"
+            />
+          </Group>
+
+          <NumberInput
+            label="Fin compteur"
+            value={finCompteur}
+            onChange={(value: string | number) => {
+              const numberValue =
+                typeof value === "string" ? parseFloat(value) : value;
+              setFinCompteur(numberValue);
+            }}
+            mt="sm"
+            disabled={!isEditing}
+          />
+          <NumberInput
+            label="Quantité"
+            value={quantite}
+            onChange={(value: string | number) => {
+              const numberValue =
+                typeof value === "string" ? parseFloat(value) : value;
+              setQuantite(numberValue);
+            }}
+            mt="sm"
+            disabled={!isEditing}
+          />
+
           <TextInput
-            label="Demandeur"
-            value={Demandeur}
-            onChange={(d) => setDemandeur(d.currentTarget.value)}
+            label="Nom Article"
+            value={NomArticle}
+            onChange={(d) => setNomArticle(d.currentTarget.value)}
             disabled={!isEditing}
             mt="sm"
           />
           <TextInput
-            label="Code 1"
-            value={code1}
-            onChange={(d) => setCode1(d.currentTarget.value)}
-            disabled={!isEditing}
-            mt="sm"
-          />
-        </Group>
-
-        <Group grow>
-          <TextInput
-            label="Recepteur"
-            value={recepteur}
-            onChange={(d) => setRecepteur(d.currentTarget.value)}
+            placeholder="... mois ... année"
+            label="DPU"
+            value={DPU}
+            onChange={(d) => setDPU(d.currentTarget.value)}
             disabled={!isEditing}
             mt="sm"
           />
           <TextInput
-            label="Code 2"
-            value={code2}
-            onChange={(d) => setCode2(d.currentTarget.value)}
+            label="Date de commande"
+            type="date"
+            value={dateCommande}
+            onChange={(d) => setDateCommande(d.currentTarget.value)}
             disabled={!isEditing}
             mt="sm"
           />
-        </Group>
 
-        <Group grow>
-          <TextInput
-            label="Imputation"
-            value={Imputation}
-            onChange={(d) => setImputation(d.currentTarget.value)}
-            disabled={!isEditing}
+          <Checkbox
+            label={
+              <>
+                Magasinier{" "}
+                {checkerNames[1] && (
+                  <Text span ml={5}>
+                    {checkerNames[1]}
+                  </Text>
+                )}{" "}
+                {(check1 || locked1) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check1}
+            onChange={() => handleCheckboxClick(1)}
+            disabled={!isEditing || check1 || locked1}
             mt="sm"
           />
-          <TextInput
-            label="Code 3"
-            value={code3}
-            onChange={(d) => setCode3(d.currentTarget.value)}
-            disabled={!isEditing}
+          <Checkbox
+            label={
+              <>
+                Directeur{" "}
+                {checkerNames[2] && (
+                  <Text span ml={5}>
+                    {checkerNames[2]}
+                  </Text>
+                )}
+                {(check2 || locked2) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check2}
+            onChange={() => handleCheckboxClick(2)}
+            disabled={!isEditing || check2 || locked2}
             mt="sm"
           />
-        </Group>
-
-        <NumberInput
-          label="Fin compteur"
-          value={finCompteur}
-          onChange={(value: string | number) => {
-            const numberValue =
-              typeof value === "string" ? parseFloat(value) : value;
-            setFinCompteur(numberValue);
-          }}
-          mt="sm"
-          disabled={!isEditing}
-        />
-        <NumberInput
-          label="Quantité"
-          value={quantite}
-          onChange={(value: string | number) => {
-            const numberValue =
-              typeof value === "string" ? parseFloat(value) : value;
-            setQuantite(numberValue);
-          }}
-          mt="sm"
-          disabled={!isEditing}
-        />
-
-        <TextInput
-          label="Nom Article"
-          value={NomArticle}
-          onChange={(d) => setNomArticle(d.currentTarget.value)}
-          disabled={!isEditing}
-          mt="sm"
-        />
-        <TextInput
-          label="DPU"
-          value={DPU}
-          onChange={(d) => setDPU(d.currentTarget.value)}
-          disabled={!isEditing}
-          mt="sm"
-        />
-        <TextInput
-          label="Date de commande"
-          type="date"
-          value={dateCommande}
-          onChange={(d) => setDateCommande(d.currentTarget.value)}
-          disabled={!isEditing}
-          mt="sm"
-        />
-
-        <Checkbox
-          label={
-            <>
-              Magasinier{" "}
-              {checkerNames[1] && (
-                <Text span ml={5}>
-                  {checkerNames[1]}
-                </Text>
-              )}{" "}
-              {(check1 || locked1) && (
-                <Text span ml={6}>
-                  🔒
-                </Text>
-              )}
-            </>
-          }
-          checked={check1}
-          onChange={() => handleCheckboxClick(1)}
-          disabled={!isEditing || check1 || locked1}
-          mt="sm"
-        />
-        <Checkbox
-          label={
-            <>
-              Directeur{" "}
-              {checkerNames[2] && (
-                <Text span ml={5}>
-                  {checkerNames[2]}
-                </Text>
-              )}
-              {(check2 || locked2) && (
-                <Text span ml={6}>
-                  🔒
-                </Text>
-              )}
-            </>
-          }
-          checked={check2}
-          onChange={() => handleCheckboxClick(2)}
-          disabled={!isEditing || check2 || locked2}
-          mt="sm"
-        />
-        <Checkbox
-          label={
-            <>
-              Chef{" "}
-              {checkerNames[3] && (
-                <Text span ml={5}>
-                  {checkerNames[3]}
-                </Text>
-              )}
-              {(check3 || locked3) && (
-                <Text span ml={6}>
-                  🔒
-                </Text>
-              )}
-            </>
-          }
-          checked={check3}
-          onChange={() => handleCheckboxClick(3)}
-          disabled={!isEditing || check3 || locked3}
-          mt="sm"
-        />
-
+          <Checkbox
+            label={
+              <>
+                Chef{" "}
+                {checkerNames[3] && (
+                  <Text span ml={5}>
+                    {checkerNames[3]}
+                  </Text>
+                )}
+                {(check3 || locked3) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check3}
+            onChange={() => handleCheckboxClick(3)}
+            disabled={!isEditing || check3 || locked3}
+            mt="sm"
+          />
         </div>
 
         <Modal
@@ -527,11 +530,11 @@ export default function ManifoldDetails({
 
         {isEditing && (
           <Group>
-          <Button color="#63687c" onClick={handlePrint} mt={"sm"}>
-            🖨️ Imprimer
-          </Button>
-            <Button color="#c94B06" onClick={handleSave} mt="sm">
+            <Button color="#c94b06" onClick={handleSave} mt="sm">
               Enregistrer
+            </Button>
+            <Button color="#63687c" onClick={handlePrint} mt={"sm"}>
+              🖨️ Imprimer
             </Button>
           </Group>
         )}
