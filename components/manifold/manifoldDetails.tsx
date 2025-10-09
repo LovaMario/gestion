@@ -122,7 +122,7 @@ export default function ManifoldDetails({
       setNomArticle(selectedManifold.NomArticle ?? "");
       setDemandeur(selectedManifold.Demandeur ?? "");
       setRecepteur(selectedManifold.recepteur ?? "");
-      setImputation(selectedManifold.imputation ?? "");
+  setImputation(selectedManifold.Imputation ?? selectedManifold.imputation ?? "");
       setQuantite(selectedManifold.quantite ?? undefined);
       setCode1(selectedManifold.code1 ?? "");
       setCode2(selectedManifold.code2 ?? "");
