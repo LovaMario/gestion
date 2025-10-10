@@ -40,34 +40,49 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
+/* 🎯 Styles spécifiques à l'impression */
 @media print {
   body {
     background: white !important;
     color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  .no-print {
+  /* Applique une marge propre autour du contenu */
+  .print-area {
+    padding: 2cm;
+    margin: auto;
+    width: 100%;
+    page-break-inside: avoid;
+  }
+  .no-print,
+  button,
+  .mantine-Modal-root,
+  .mantine-Modal-overlay {
+    display: none !important;
+  }
+  /* Enlève les boutons et autres éléments inutiles */
+  .no-print,
+  button,
+  .mantine-Modal-root,
+  .mantine-Modal-overlay {
     display: none !important;
   }
 
-  .print-area {
-    margin: 2cm;
-  }
-
-  .print-header {
-    font-size: 20px;
-    text-align: center;
-    margin-bottom: 20px;
-  }
-
+  /* Force le format de page et les marges physiques */
   @page {
     size: A4;
     margin: 1.5cm;
   }
-}
 
+  /* Optionnel : un petit en-tête automatique */
+  .print-area::before {
+    content: "Document Manifold — Impression";
+    display: block;
+    text-align: center;
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 1cm;
+  }
+}
