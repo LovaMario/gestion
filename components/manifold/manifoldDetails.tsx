@@ -329,7 +329,6 @@ export default function ManifoldDetails({
               Manifold enregistré !
             </div>
           )}
-          {/* ...le reste du contenu à imprimer... */}
 
           <Group grow>
             <TextInput
@@ -458,7 +457,7 @@ export default function ManifoldDetails({
           <Checkbox
             label={
               <>
-                Directeur{" "}
+                Responsable achat{" "}
                 {checkerNames[2] && (
                   <Text span ml={5}>
                     {checkerNames[2]}
@@ -479,7 +478,7 @@ export default function ManifoldDetails({
           <Checkbox
             label={
               <>
-                Chef{" "}
+                Employer{" "}
                 {checkerNames[3] && (
                   <Text span ml={5}>
                     {checkerNames[3]}
@@ -496,6 +495,7 @@ export default function ManifoldDetails({
             onChange={() => handleCheckboxClick(3)}
             disabled={!isEditing || check3 || locked3}
             mt="sm"
+      
           />
         </div>
 

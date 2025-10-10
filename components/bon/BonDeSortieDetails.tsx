@@ -748,7 +748,7 @@ export default function BonDeSortieDetails({
         <Checkbox
           label={
             <>
-              Directeur{" "}
+              Responsable achat{" "}
               {checkerNames[2] && (
                 <Text span ml={5}>
                   {checkerNames[2]}
@@ -770,7 +770,7 @@ export default function BonDeSortieDetails({
         <Checkbox
           label={
             <>
-              Chef{" "}
+              Employer{" "}
               {checkerNames[3] && (
                 <Text span ml={5}>
                   {checkerNames[3]}
