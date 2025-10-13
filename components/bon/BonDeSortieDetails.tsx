@@ -30,7 +30,7 @@ type Props = {
   BonsDeSortie: BonDeSortie[];
   setBonsDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie[]>>;
   selectedBonDeSortie: BonDeSortie | null;
-   setSelectedBonDeSortie: React.Dispatch<
+  setSelectedBonDeSortie: React.Dispatch<
     React.SetStateAction<BonDeSortie | null>
   >;
   isEditing: boolean;
@@ -63,9 +63,10 @@ export default function BonDeSortieDetails({
   const [piece, setPiece] = useState<number | undefined>(undefined);
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `Bon_de_Sortie_${typeof piece !== "undefined" ? piece : "Nouveau"}`,
+    documentTitle: `Bon_de_Sortie_${
+      typeof piece !== "undefined" ? piece : "Nouveau"
+    }`,
   } as any);
-
 
   const form = useForm({
     initialValues: { matricule: "", name: "", password: "" },
@@ -97,7 +98,12 @@ export default function BonDeSortieDetails({
   };
 
   // --- DEPOT ---
-  const [depotOptions, setDepotOptions] = useState(["Central", "Vato","Mousse", "Fer"]);
+  const [depotOptions, setDepotOptions] = useState([
+    "Central",
+    "Vato",
+    "Mousse",
+    "Fer",
+  ]);
   const [depotValue, setDepotValue] = useState<string | null>(null);
   const [depotInput, setDepotInput] = useState("");
   const handleDepotKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -150,11 +156,7 @@ export default function BonDeSortieDetails({
   };
 
   // --- SECTEUR ---
-  const [secteurOptions, setSecteurOptions] = useState([
-    "AD",
-    "EII",
-    "DD",
-  ]);
+  const [secteurOptions, setSecteurOptions] = useState(["AD", "EII", "DD"]);
   const [secteurValue, setSecteurValue] = useState<string | null>(null);
   const [secteurInput, setSecteurInput] = useState("");
 
@@ -290,6 +292,11 @@ export default function BonDeSortieDetails({
       setImputationCode(selectedBonDeSortie.imputationCode ?? "");
       setCommande(selectedBonDeSortie.commande ?? "");
       setUnite(selectedBonDeSortie.unite ?? "");
+      const dateValue = selectedBonDeSortie.dateSortie
+        ? new Date(selectedBonDeSortie.dateSortie).toISOString().split("T")[0]
+        : "";
+         console.log("Date de sortie formatée pour l'input:", dateValue);
+      setDateSortie(dateValue);
 
       // Restaurer l'état des checkboxes et verrouillages
       setCheck1(selectedBonDeSortie.check1 ?? false);
@@ -718,77 +725,76 @@ export default function BonDeSortieDetails({
             mt="sm"
             disabled={!isEditing}
           />
-        
 
-        {/* 🎯 CHECKBOXES (ATTRIBUT DISABLED MIS À JOUR) */}
-        <Group>
+          {/* 🎯 CHECKBOXES (ATTRIBUT DISABLED MIS À JOUR) */}
+          <Group>
+            <Checkbox
+              label={
+                <>
+                  Magasinier{" "}
+                  {checkerNames[1] && (
+                    <Text span ml={5}>
+                      {checkerNames[1]}
+                    </Text>
+                  )}{" "}
+                  {(check1 || locked1) && (
+                    <Text span ml={6}>
+                      🔒
+                    </Text>
+                  )}
+                </>
+              }
+              checked={check1}
+              onChange={() => handleCheckboxClick(1)}
+              disabled={!isEditing || check1 || locked1}
+              mt="sm"
+            />
+          </Group>
+
           <Checkbox
             label={
               <>
-                Magasinier{" "}
-                {checkerNames[1] && (
+                Responsable achat{" "}
+                {checkerNames[2] && (
                   <Text span ml={5}>
-                    {checkerNames[1]}
+                    {checkerNames[2]}
                   </Text>
-                )}{" "}
-                {(check1 || locked1) && (
+                )}
+                {(check2 || locked2) && (
                   <Text span ml={6}>
                     🔒
                   </Text>
                 )}
               </>
             }
-            checked={check1}
-            onChange={() => handleCheckboxClick(1)}
-            disabled={!isEditing || check1 || locked1}
+            checked={check2}
+            onChange={() => handleCheckboxClick(2)}
+            disabled={!isEditing || check2 || locked2}
             mt="sm"
           />
-        </Group>
 
-        <Checkbox
-          label={
-            <>
-              Responsable achat{" "}
-              {checkerNames[2] && (
-                <Text span ml={5}>
-                  {checkerNames[2]}
-                </Text>
-              )}
-              {(check2 || locked2) && (
-                <Text span ml={6}>
-                  🔒
-                </Text>
-              )}
-            </>
-          }
-          checked={check2}
-          onChange={() => handleCheckboxClick(2)}
-          disabled={!isEditing || check2 || locked2}
-          mt="sm"
-        />
-
-        <Checkbox
-          label={
-            <>
-              Employer{" "}
-              {checkerNames[3] && (
-                <Text span ml={5}>
-                  {checkerNames[3]}
-                </Text>
-              )}
-              {(check3 || locked3) && (
-                <Text span ml={6}>
-                  🔒
-                </Text>
-              )}
-            </>
-          }
-          checked={check3}
-          onChange={() => handleCheckboxClick(3)}
-          disabled={!isEditing || check3 || locked3}
-          mt="sm"
-        />
-        {/* 🎯 FIN CHECKBOXES */}
+          <Checkbox
+            label={
+              <>
+                Employé{" "}
+                {checkerNames[3] && (
+                  <Text span ml={5}>
+                    {checkerNames[3]}
+                  </Text>
+                )}
+                {(check3 || locked3) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check3}
+            onChange={() => handleCheckboxClick(3)}
+            disabled={!isEditing || check3 || locked3}
+            mt="sm"
+          />
+          {/* 🎯 FIN CHECKBOXES */}
         </div>
 
         <Modal
@@ -822,11 +828,15 @@ export default function BonDeSortieDetails({
 
         {isEditing && (
           <Group>
-            
             <Button color="#c94b06" onClick={handleSave} mt="sm">
               Enregistrer
             </Button>
-            <Button color="#63687c" onClick={handlePrint} mt="sm">
+            <Button
+              color="#63687c"
+              onClick={handlePrint}
+              mt="sm"
+              variant="outline"
+            >
               🖨️ Imprimer
             </Button>
           </Group>
