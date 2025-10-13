@@ -47,6 +47,7 @@ export default function ManifoldDetails({
   const [check1, setCheck1] = useState(false);
   const [locked1, setLocked1] = useState(false);
   const [check2, setCheck2] = useState(false);
+
   const [locked2, setLocked2] = useState(false);
   const [check3, setCheck3] = useState(false);
   const [locked3, setLocked3] = useState(false);
@@ -122,14 +123,19 @@ export default function ManifoldDetails({
       setNomArticle(selectedManifold.NomArticle ?? "");
       setDemandeur(selectedManifold.Demandeur ?? "");
       setRecepteur(selectedManifold.recepteur ?? "");
-  setImputation(selectedManifold.Imputation ?? selectedManifold.imputation ?? "");
+      setImputation(selectedManifold.Imputation ?? selectedManifold.imputation ?? "");
       setQuantite(selectedManifold.quantite ?? undefined);
       setCode1(selectedManifold.code1 ?? "");
       setCode2(selectedManifold.code2 ?? "");
       setCode3(selectedManifold.code3 ?? "");
       setFinCompteur(selectedManifold.finCompteur ?? undefined);
       setDPU(selectedManifold.DPU ?? "");
-      setDateCommande(selectedManifold.dateCommande ?? "");
+
+      const dateValue = selectedManifold.dateCommande
+        ? new Date(selectedManifold.dateCommande).toISOString().split("T")[0]
+        : "";
+         console.log("Date de commande formatée pour l'input:", dateValue);
+      setDateCommande(dateValue);
       setCheck1(selectedManifold.check1 ?? false);
       setLocked1(selectedManifold.locked1 ?? false);
       setCheck2(selectedManifold.check2 ?? false);
@@ -321,7 +327,6 @@ export default function ManifoldDetails({
   return (
     <ScrollArea h={800} type="always">
       <Card shadow="xl" radius="lg" mb={8} m={10}>
-        {/* 👇 Contenu à imprimer */}
         <div ref={printRef} className="print-area">
           <Title order={3}>Manifold</Title>
           {submitted && (
@@ -478,7 +483,7 @@ export default function ManifoldDetails({
           <Checkbox
             label={
               <>
-                Employer{" "}
+                Employé{" "}
                 {checkerNames[3] && (
                   <Text span ml={5}>
                     {checkerNames[3]}
@@ -533,7 +538,7 @@ export default function ManifoldDetails({
             <Button color="#c94b06" onClick={handleSave} mt="sm">
               Enregistrer
             </Button>
-            <Button color="#63687c" onClick={handlePrint} mt={"sm"}>
+            <Button color="#63687c" onClick={handlePrint} mt={"sm"} variant="outline">
               🖨️ Imprimer
             </Button>
           </Group>
