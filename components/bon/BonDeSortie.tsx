@@ -10,19 +10,13 @@ export type BonDeSortie = {
   id: number;
   piece: number;
   manuelle: number;
-  quantite: number;
   dateSortie: string;
   magasin: string;
   depot: string;
   departement: string;
   secteur: string;
   atelier: string;
-  codeArticle: string;
-  libelleArticle: string;
-  imputation: string;
-  imputationCode: string;
-  commande: string;
-  unite: string;
+  articles: articles[];
   check1: boolean;
   check2: boolean;
   check3: boolean;
@@ -33,6 +27,17 @@ export type BonDeSortie = {
   checker2_nom: string | null;
   checker3_nom: string | null;
   checkerNames: { [key: number]: string };
+};
+
+export type articles = {
+  id: number; // ID temporaire pour la gestion React (key, suppression)
+  codeArticle: string;
+  libelleArticle: string;
+  quantite: number | undefined;
+  unite: string;
+  imputation: string;
+  imputationCode: string | null;
+  commande: string;
 };
 
 export default function BonDeSortiePage() {
@@ -113,7 +118,14 @@ export default function BonDeSortiePage() {
     // et ne gère plus le défilement.
     <AppShell style={{ padding: "2rem" }}>
       <Group mb="md">
-        <Button color="#c94b06" onClick={handleNewBon}>
+        <Button
+          color="#c94b06"
+          onClick={() => {
+            setSelectedBonDeSortie(null); // Ceci déclenchera le useEffect dans BonDeSortieDetails
+            setIsEditing(true);
+            handleNewBon;
+          }}
+        >
           Nouveau Bon de Sortie
         </Button>
       </Group>
