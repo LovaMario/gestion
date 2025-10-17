@@ -38,9 +38,9 @@ export default function BonDeSortieListe({
   const filteredBons = bonsDeSortie.filter((b) => {
     const term = searchTerm.toLowerCase();
     return (
-      b.id !== undefined &&
-      b.id !== null &&
-      b.id.toString().toLowerCase().includes(term) ||
+      (b.id !== undefined &&
+        b.id !== null &&
+        b.id.toString().toLowerCase().includes(term)) ||
       String(b.manuelle).toLowerCase().includes(term) ||
       String(b.piece).toLowerCase().includes(term)
     );
@@ -72,7 +72,7 @@ export default function BonDeSortieListe({
       </Title>
 
       <TextInput
-        placeholder="Rechercher par code article, ou numéro du BSM..."
+        placeholder="Rechercher par numéro du BSM,  numéro de pièce ou numéro de pièce manuelle"
         mb="md"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.currentTarget.value)}
@@ -114,6 +114,8 @@ export default function BonDeSortieListe({
                 >
                   Département
                 </th>
+
+          
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
@@ -176,6 +178,8 @@ export default function BonDeSortieListe({
                   >
                     {bon.departement}
                   </td>
+
+                  
 
                   <td
                     style={{

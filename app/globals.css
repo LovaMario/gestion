@@ -40,6 +40,7 @@ a {
   text-decoration: none;
 }
 
+
 /* 🎯 Styles spécifiques à l'impression */
 @media print {
   body {
@@ -84,5 +85,18 @@ a {
     font-size: 14pt;
     font-weight: bold;
     margin-bottom: 1cm;
+  }
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
   }
 }

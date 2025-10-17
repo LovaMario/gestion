@@ -24,6 +24,17 @@ import { useToggle } from "@mantine/hooks";
 import { useReactToPrint } from "react-to-print";
 import { IconTrash } from "@tabler/icons-react";
 
+const thStyle = {
+  border: "1px solid #ccc",
+  padding: "6px",
+  textAlign: "left",
+};
+
+const tdStyle = {
+  border: "1px solid #ccc",
+  padding: "6px",
+};
+
 // --- NOUVEAU TYPE POUR UN ARTICLE ---
 export type Article = {
   id: number; // ID temporaire pour la gestion React (key, suppression)
@@ -304,15 +315,14 @@ export default function BonDeSortieDetails({
       setManuelle(selectedBonDeSortie.manuelle ?? undefined);
       setMagasinValue(selectedBonDeSortie.magasin ?? "");
       setDepotValue(selectedBonDeSortie.depot ?? "");
+      setDepartementValue(selectedBonDeSortie.departement ?? "");
+      setAtelierValue(selectedBonDeSortie.atelier ?? "");
+      setSecteurValue(selectedBonDeSortie.secteur ?? "");
 
       const dateValue = selectedBonDeSortie.dateSortie
         ? new Date(selectedBonDeSortie.dateSortie).toISOString().split("T")[0]
         : "";
       setDateSortie(dateValue);
-
-      setDepartementValue(selectedBonDeSortie.departement ?? "");
-      setAtelierValue(selectedBonDeSortie.atelier ?? "");
-      setSecteurValue(selectedBonDeSortie.secteur ?? "");
 
       // Restaurer les articles
       const loadedArticles: Article[] =
@@ -536,10 +546,10 @@ export default function BonDeSortieDetails({
 
   // --- RENDU ---
   return (
-    <ScrollArea h={1000} type="scroll">
+    <ScrollArea h={800} type="scroll">
       <Card shadow="xl" radius={"lg"} mb={8} m={10}>
         {/* 👇 Contenu à imprimer */}
-        <div ref={printRef} className="print-area">
+        <div className="form-area">
           <Title order={3}>Bon de sortie</Title>
 
           {submitted && (
@@ -656,12 +666,14 @@ export default function BonDeSortieDetails({
               placeholder="Sélectionner ou ajouter un atelier"
             />
           </Group>
-          <Divider my="md" label="Articles" labelPosition="center" />
-
-          <Title order={4} mt="md">
-            Détails des Articles
-          </Title>
-
+          {isEditing && (
+            <Divider my="md" label="Articles" labelPosition="center" />
+          )}
+          {isEditing && (
+            <Title order={4} mt="md">
+              Détails des Articles
+            </Title>
+          )}
           {articles.map((article, index) => (
             <Card
               key={article.id}
@@ -682,22 +694,20 @@ export default function BonDeSortieDetails({
                     variant="light"
                     color="red"
                     onClick={() => handleRemoveArticle(article.id)}
-                    leftSection={<IconTrash size={16} />}
                   >
-                    Supprimer
+                    <IconTrash size={16} />
                   </Button>
                 )}
               </Group>
 
-              <Group grow gap={20} mt="md">
-                <Group gap="md" mb={-10}>
-                  <Text w={120} fw={500} mb={-16}>
+              <Group grow align="end" gap="md" mt={10}>
+                <div style={{ flex: 1 }}>
+                  <Text fw={500} mb={0}>
                     Code article
                   </Text>
                   <Input
                     component={IMaskInput}
                     mask="M****************************************************************************"
-                    style={{ width: 400 }}
                     value={article.codeArticle}
                     onChange={(e: any) =>
                       handleArticleChange(
@@ -708,25 +718,26 @@ export default function BonDeSortieDetails({
                     }
                     disabled={!isEditing}
                   />
-                </Group>
+                </div>
 
-                <TextInput
-                  placeholder="Libellé de l'article"
-                  label="Libellé article"
-                  value={article.libelleArticle}
-                  onChange={(d) =>
-                    handleArticleChange(
-                      article.id,
-                      "libelleArticle",
-                      d.currentTarget.value
-                    )
-                  }
-                  mt="sm"
-                  disabled={!isEditing}
-                />
+                <div style={{ flex: 2 }}>
+                  <TextInput
+                    label="Libellé article"
+                    placeholder="Libellé de l'article"
+                    value={article.libelleArticle}
+                    onChange={(d) =>
+                      handleArticleChange(
+                        article.id,
+                        "libelleArticle",
+                        d.currentTarget.value
+                      )
+                    }
+                    disabled={!isEditing}
+                  />
+                </div>
               </Group>
 
-              <Group>
+              <Group grow>
                 <NumberInput
                   label="Quantité"
                   value={article.quantite}
@@ -804,44 +815,41 @@ export default function BonDeSortieDetails({
 
           {/* Bouton pour ajouter un article */}
           {isEditing && (
-            <Group justify="center" mt="md" mb="xl">
+            <Group justify="space-between" mb="sm">
               <Button
-                variant="outline"
-                color="#c94b06"
                 onClick={handleAddArticle}
-                leftSection={<span>+</span>}
                 disabled={!isEditing}
+                color="#c94b06"
               >
-                Ajouter un autre article
+                + Ajouter un article
               </Button>
             </Group>
           )}
           {/* Fin des détails des articles */}
 
           <Divider my="md" label="Confirmations" labelPosition="center" />
-          <Group>
-            <Checkbox
-              label={
-                <>
-                  Magasinier{" "}
-                  {checkerNames[1] && (
-                    <Text span ml={5}>
-                      {checkerNames[1]}
-                    </Text>
-                  )}{" "}
-                  {(check1 || locked1) && (
-                    <Text span ml={6}>
-                      🔒
-                    </Text>
-                  )}
-                </>
-              }
-              checked={check1}
-              onChange={() => handleCheckboxClick(1)}
-              disabled={!isEditing || check1 || locked1}
-              mt="sm"
-            />
-          </Group>
+
+          <Checkbox
+            label={
+              <>
+                Magasinier{" "}
+                {checkerNames[1] && (
+                  <Text span ml={5}>
+                    {checkerNames[1]}
+                  </Text>
+                )}{" "}
+                {(check1 || locked1) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check1}
+            onChange={() => handleCheckboxClick(1)}
+            disabled={!isEditing || check1 || locked1}
+            mt="sm"
+          />
 
           <Checkbox
             label={
@@ -917,6 +925,128 @@ export default function BonDeSortieDetails({
           </Group>
         </Modal>
 
+        <div style={{ display: "none" }}>
+          {/* --- Version imprimable (invisible à l'écran) --- */}
+          <div
+            ref={printRef}
+            className="print-area"
+            style={{ padding: "20px" }}
+          >
+            <Title order={3} ta="center" mb="md">
+              Bon de Sortie N° {selectedBonDeSortie?.id ?? "—"}
+            </Title>
+
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginBottom: "1rem",
+              }}
+            >
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>Date de sortie :</strong>
+                  </td>
+                  <td>{dateSortie || "—"}</td>
+                  <td>
+                    <strong>Magasin :</strong>
+                  </td>
+                  <td>{magasinValue || "—"}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Dépôt :</strong>
+                  </td>
+                  <td>{depotValue || "—"}</td>
+                  <td>
+                    <strong>Département :</strong>
+                  </td>
+                  <td>{departementValue || "—"}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Atelier :</strong>
+                  </td>
+                  <td>{atelierValue || "—"}</td>
+                  <td>
+                    <strong>Secteur :</strong>
+                  </td>
+                  <td>{secteurValue || "—"}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <Title order={4} mb="xs">
+              Liste des articles
+            </Title>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginTop: "10px",
+              }}
+            >
+              <thead>
+                <tr style={{ backgroundColor: "#f0f0f0" }}>
+                  <th>N° Bon</th>
+                  <th>Code Article</th>
+                  <th>Libellé</th>
+                  <th>Qté</th>
+                  <th>Unité</th>
+                  <th>Imputation</th>
+                  <th>Commande</th>
+                </tr>
+              </thead>
+              <tbody>
+                {articles.map((a, idx) => (
+                  <tr key={a.id}>
+                    <td style={tdStyle}>{idx + 1}</td>
+                    <td style={tdStyle}>{a.codeArticle}</td>
+                    <td style={tdStyle}>{a.libelleArticle}</td>
+                    <td style={tdStyle}>{a.quantite}</td>
+                    <td style={tdStyle}>{a.unite}</td>
+                    <td style={tdStyle}>
+                      {a.imputationCode} - {a.imputation}
+                    </td>
+                    <td style={tdStyle}>{a.commande}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <Divider my="md" />
+
+            <table
+              style={{ width: "100%", textAlign: "center", marginTop: "2rem" }}
+            >
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>Magasinier</strong>
+                  </td>
+                  <td>
+                    <strong>Responsable Achat</strong>
+                  </td>
+                  <td>
+                    <strong>Employé</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ height: "60px" }}>
+                    {checkerNames[1] || ""} {check1 && "✅"}
+                  </td>
+                  <td>
+                    {checkerNames[2] || ""} {check2 && "✅"}
+                  </td>
+                  <td>
+                    {checkerNames[3] || ""} {check3 && "✅"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
         {isEditing && (
           <Group>
             <Button color="#c94b06" onClick={handleSave} mt="sm">
