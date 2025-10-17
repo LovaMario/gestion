@@ -13,33 +13,25 @@ import {
   PasswordInput,
   ScrollArea,
   Text,
+  Textarea,
   TextInput,
   Title,
 } from "@mantine/core";
 import { Manifold } from "./manifold";
 import { IconTrash } from "@tabler/icons-react";
-
-// --- TYPES ---
-export type Article = {
-  id: number;
-  NomArticle: string;
-  quantite: number | undefined;
-  finCompteur: number | undefined;
-  unite: string;
-  DPU: string;
-  imputation: string;
-};
-
+import { useForm } from "@mantine/form";
+import { useToggle } from "@mantine/hooks";
+import { Article } from "../manifold/manifold";
 // Fonction utilitaire pour créer un article vide
 let nextTempId = 1;
 const createEmptyArticle = (): Article => ({
   id: nextTempId++,
   NomArticle: "",
-  quantite: undefined,
+  quantite: 0,
   unite: "",
-  imputation: "",
-  finCompteur: undefined,
+  finCompteur: 0,
   DPU: "",
+  imputation: "",
 });
 
 type Props = {
@@ -64,14 +56,18 @@ export default function ManifoldDetails({
   setIsEditing,
   onSaveAndReturn,
 }: Props) {
-  const [DemandeurValue, setDemandeurValue] = useState<string | null>(null);
-  const [RecepteurValue, setRecepteurValue] = useState<string | null>(null);
-  const [Code1Value, setCode1Value] = useState<string | null>(null);
-  const [Code2Value, setCode2Value] = useState<string | null>(null);
-  const [Code3Value, setCode3Value] = useState<string | null>(null);
-  const [dateCommandeValue, setDateCommandevalue] = useState<string | null>(
-    null
-  );
+  const thStyle = {
+    border: "1px solid #ccc",
+    padding: "6px",
+    textAlign: "left",
+  };
+
+  const tdStyle = {
+    border: "1px solid #ccc",
+    padding: "6px",
+  };
+
+  const [type, toggle] = useToggle(["Se connecter", "Créer un compte"]);
 
   // --- REF POUR IMPRESSION ---
   // --- IMPRESSION ---
@@ -84,40 +80,21 @@ export default function ManifoldDetails({
     }`,
   } as any);
 
-  const getDefaultArticle = (): Article => ({
-    id: Date.now(),
-    NomArticle: "",
-    quantite: undefined,
-    finCompteur: undefined,
-    DPU: "",
-    unite: "",
-    imputation: "",
+  // --- FORMULAIRE D'AUTHENTIFICATION (pour les checks) ---
+  const form = useForm({
+    initialValues: { matricule: "", name: "", password: "" },
+    validate: {
+      matricule: (val) => (val.length > 0 ? null : "Matricule obligatoire"),
+      password: (val) =>
+        val.length < 6
+          ? "Le mot de passe doit contenir au moins 6 caractères"
+          : null,
+      name: (val) =>
+        type === "Créer un compte" && val.length < 3
+          ? "Le nom est requis"
+          : null,
+    },
   });
-
-  // --- ÉTATS ---
-  const [Nomarticle, setNomArticle] = useState("");
-  const [Demandeur, setDemandeur] = useState("");
-  const [recepteur, setRecepteur] = useState("");
-  const [code1, setCode1] = useState("");
-  const [code2, setCode2] = useState("");
-  const [code3, setCode3] = useState("");
-  const [dateCommande, setDateCommande] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [check1, setCheck1] = useState(false);
-  const [check2, setCheck2] = useState(false);
-  const [check3, setCheck3] = useState(false);
-  const prevIsEditingRef = useRef<boolean>(isEditing);
-
-  const [locked1, setLocked1] = useState(false);
-  const [locked2, setLocked2] = useState(false);
-  const [locked3, setLocked3] = useState(false);
-  const [checkerNames, setCheckerNames] = useState<{ [key: number]: string }>(
-    {}
-  );
-  const [opened, setOpened] = useState(false);
-  const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
-  const [matricule, setMatricule] = useState("");
-  const [password, setPassword] = useState("");
 
   const [articles, setArticles] = useState<Article[]>([]);
 
@@ -141,7 +118,42 @@ export default function ManifoldDetails({
     );
   };
 
-  const handleNewBon = () => {
+  const [check1, setCheck1] = useState(false);
+  const [check2, setCheck2] = useState(false);
+  const [check3, setCheck3] = useState(false);
+  const [locked1, setLocked1] = useState(false);
+  const [locked2, setLocked2] = useState(false);
+  const [locked3, setLocked3] = useState(false);
+  const [checkerNames, setCheckerNames] = useState<{ [key: number]: string }>(
+    {}
+  );
+
+  // --- ÉTATS MODAL/CONNEXION ---
+  const [opened, setOpened] = useState(false);
+  const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
+  const [matricule, setMatricule] = useState("");
+  const [password, setPassword] = useState("");
+  const [manuelle, setManuelle] = useState<number | undefined>(undefined);
+  const [motif, setMotif] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const prevIsEditingRef = useRef<boolean>(isEditing);
+
+  // --- GESTION MODAL ---
+  const handleCheckboxClick = (index: number) => {
+    if (!isEditing) return;
+    setActiveCheckbox(index);
+    setOpened(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpened(false);
+    setActiveCheckbox(null);
+    setMatricule("");
+    setPassword("");
+  };
+
+  const handleNewManifold = () => {
     // Réinitialiser tous les états locaux pour un nouveau manifold
     setDemandeur("");
     setRecepteur("");
@@ -168,6 +180,15 @@ export default function ManifoldDetails({
     setSubmitted(false);
   };
 
+  // --- ÉTATS ---
+  const [NomArticle, setNomArticle] = useState("");
+  const [Demandeur, setDemandeur] = useState("");
+  const [recepteur, setRecepteur] = useState("");
+  const [code1, setCode1] = useState("");
+  const [code2, setCode2] = useState("");
+  const [code3, setCode3] = useState("");
+  const [dateCommande, setDateCommande] = useState("");
+
   // --- CHARGEMENT ---
   useEffect(() => {
     if (selectedManifold) {
@@ -177,6 +198,7 @@ export default function ManifoldDetails({
       setCode2(selectedManifold.code2 ?? "");
       setCode3(selectedManifold.code3 ?? "");
       setDateCommande(selectedManifold.dateCommande ?? "");
+      setMotif(selectedManifold.motif ?? "");
 
       const dateValue = selectedManifold.dateCommande
         ? new Date(selectedManifold.dateCommande).toISOString().split("T")[0]
@@ -188,7 +210,6 @@ export default function ManifoldDetails({
           ? selectedManifold.articles.map((art) => ({
               ...art,
               id: art.id || createEmptyArticle().id,
-              unite: art.unite || createEmptyArticle().unite,
             }))
           : [createEmptyArticle()];
       setArticles(loadedArticles);
@@ -199,52 +220,58 @@ export default function ManifoldDetails({
       setLocked1(selectedManifold.locked1 ?? false);
       setLocked2(selectedManifold.locked2 ?? false);
       setLocked3(selectedManifold.locked3 ?? false);
+
       setCheckerNames({
         1: selectedManifold.checker1_nom ?? "",
         2: selectedManifold.checker2_nom ?? "",
         3: selectedManifold.checker3_nom ?? "",
       });
+
       prevIsEditingRef.current = isEditing;
     } else if (isEditing) {
       // Nouveau bon
-      handleNewBon();
+      handleNewManifold();
     }
   }, [selectedManifold, isEditing]);
 
   // --- SAVE ---
   const handleSave = async () => {
-    const isUpdating = !!selectedManifold?.id;
+    const isUpdating =
+      selectedManifold?.id !== undefined && selectedManifold.id !== 0;
 
-    const manifoldData = {
-      id: isUpdating ? selectedManifold.id : 0,
-      Demandeur,
-      recepteur,
-      code1,
-      code2,
-      code3,
-      dateCommande,
+    const manifoldDataToSend = {
+      id: isUpdating ? selectedManifold.id : undefined,
+      Demandeur: Demandeur,
+      recepteur: recepteur,
+      code1: code1 ?? 0,
+      code2: code2 ?? 0,
+      code3: code3 ?? 0,
+      dateCommande: dateCommande || "",
+      motif,
+
+      articles: articles.map(({ id, ...rest }) => rest),
+
       check1,
       check2,
       check3,
       locked1,
       locked2,
       locked3,
-      checker1_nom: checkerNames[1] || null,
-      checker2_nom: checkerNames[2] || null,
-      checker3_nom: checkerNames[3] || null,
-      articles: articles.map(({ id, ...rest }) => rest),
+
+      checkerNames: checkerNames,
     };
 
     const method = isUpdating ? "PUT" : "POST";
 
     try {
       const res = await fetch("/api/manifold", {
-        method: isUpdating ? "PUT" : "POST",
+        method: method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(manifoldData),
+        body: JSON.stringify(manifoldDataToSend),
       });
 
       const result = await res.json();
+
       if (!res.ok) {
         alert(result.message || "Erreur lors de l’enregistrement");
         return;
@@ -263,8 +290,6 @@ export default function ManifoldDetails({
 
   // --- CONFIRM CHECKER ---
   const handleConfirmChecker = async (checkboxIndex: number) => {
-    const manifoldId = selectedManifold?.id;
-
     if (!matricule || !password) {
       alert("Matricule et mot de passe requis");
       return;
@@ -340,30 +365,34 @@ export default function ManifoldDetails({
       setCheckerNames(newCheckerNames);
 
       // --- 4. Mise à jour DB (PUT) ---
-      const bonId = selectedManifold?.id;
+      const manifoldId = selectedManifold?.id;
 
-      const bonDataToUpdate = {
+      const manifoldDataToUpdate = {
         id: manifoldId,
         Demandeur: Demandeur,
         recepteur: recepteur,
-        code1: code1,
-        code2: code2,
-        code3: code3,
-        dateCommande: dateCommande,
+        code1: code1 ?? 0,
+        code2: code2 ?? 0,
+        code3: code3 ?? 0,
+        dateCommande: dateCommande || "",
+        motif,
+
         articles: articles.map(({ id, ...rest }) => rest),
+
         check1: newCheck1,
         check2: newCheck2,
         check3: newCheck3,
         locked1: newLocked1,
         locked2: newLocked2,
         locked3: newLocked3,
+
         checkerNames: newCheckerNames,
       };
 
       const putResponse = await fetch("/api/manifold", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bonDataToUpdate),
+        body: JSON.stringify(manifoldDataToUpdate),
       });
 
       const putResult = await putResponse.json();
@@ -386,24 +415,10 @@ export default function ManifoldDetails({
     }
   };
 
-  // --- MODAL LOGIN ---
-  const handleCheckboxClick = (index: number) => {
-    if (!isEditing) return;
-    setActiveCheckbox(index);
-    setOpened(true);
-  };
-
-  const handleCloseModal = () => {
-    setOpened(false);
-    setActiveCheckbox(null);
-    setMatricule("");
-    setPassword("");
-  };
-
   return (
-    <ScrollArea h={900} type="scroll">
+    <ScrollArea h={800} type="scroll">
       <Card shadow="xl" radius="lg" mb={8} m={10}>
-        <div ref={printRef} className="print-area">
+        <div className="form-area">
           <Title order={3}>Manifold</Title>
 
           {submitted && (
@@ -460,17 +475,9 @@ export default function ManifoldDetails({
               disabled={!isEditing}
             />
           </Group>
-
-          <Divider my="md" label="Articles" labelPosition="center" />
-          <Group justify="space-between" mb="sm">
-            <Button
-              onClick={handleAddArticle}
-              disabled={!isEditing}
-              color="#c94b06"
-            >
-              + Ajouter un article
-            </Button>
-          </Group>
+          {isEditing && (
+            <Divider my="md" label="Articles" labelPosition="center" />
+          )}
 
           {articles.map((art, i) => (
             <Card
@@ -492,9 +499,8 @@ export default function ManifoldDetails({
                     variant="light"
                     color="red"
                     onClick={() => handleRemoveArticle(art.id)}
-                    leftSection={<IconTrash size={16} />}
                   >
-                    Supprimer
+                    <IconTrash size={16} />
                   </Button>
                 )}
               </Group>
@@ -533,6 +539,20 @@ export default function ManifoldDetails({
                   mt="sm"
                   disabled={!isEditing}
                 />
+                <TextInput
+                  placeholder="Imputée à"
+                  label="Imputation"
+                  value={art.imputation}
+                  onChange={(d) =>
+                    handleArticleChange(
+                      art.id,
+                      "imputation",
+                      d.currentTarget.value
+                    )
+                  }
+                  mt="sm"
+                  disabled={!isEditing}
+                />
               </Group>
               <TextInput
                 placeholder="DPU"
@@ -558,40 +578,93 @@ export default function ManifoldDetails({
             </Card>
           ))}
 
+          {isEditing && (
+            <Group justify="space-between" mb="sm">
+              <Button
+                onClick={handleAddArticle}
+                disabled={!isEditing}
+                color="#c94b06"
+              >
+                + Ajouter un article
+              </Button>
+            </Group>
+          )}
+
+          <Textarea
+            autosize
+            placeholder="Motif de la demande"
+            value={motif}
+            onChange={(e) => setMotif(e.currentTarget.value)}
+            disabled={!isEditing}
+            mt="sm"
+          />
+
           <Divider my="md" label="Confirmations" labelPosition="center" />
-          {[1, 2, 3].map((idx) => (
-            <Checkbox
-              key={idx}
-              label={
-                <>
-                  {idx === 1
-                    ? "Magasinier"
-                    : idx === 2
-                    ? "Responsable Achat"
-                    : "Employé"}{" "}
-                  {checkerNames[idx] && (
-                    <Text span ml={5}>
-                      {checkerNames[idx]}
-                    </Text>
-                  )}
-                  {(idx === 1 && locked1) ||
-                  (idx === 2 && locked2) ||
-                  (idx === 3 && locked3) ? (
-                    <Text span ml={6}>
-                      🔒
-                    </Text>
-                  ) : null}
-                </>
-              }
-              checked={idx === 1 ? check1 : idx === 2 ? check2 : check3}
-              onChange={() => handleCheckboxClick(idx)}
-              disabled={
-                !isEditing ||
-                (idx === 1 ? locked1 : idx === 2 ? locked2 : locked3)
-              }
-              mt="sm"
-            />
-          ))}
+          <Checkbox
+            label={
+              <>
+                Magasinier{" "}
+                {checkerNames[1] && (
+                  <Text span ml={5}>
+                    {checkerNames[1]}
+                  </Text>
+                )}{" "}
+                {(check1 || locked1) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check1}
+            onChange={() => handleCheckboxClick(1)}
+            disabled={!isEditing || check1 || locked1}
+            mt="sm"
+          />
+
+          <Checkbox
+            label={
+              <>
+                Responsable achat{" "}
+                {checkerNames[2] && (
+                  <Text span ml={5}>
+                    {checkerNames[2]}
+                  </Text>
+                )}
+                {(check2 || locked2) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check2}
+            onChange={() => handleCheckboxClick(2)}
+            disabled={!isEditing || check2 || locked2}
+            mt="sm"
+          />
+
+          <Checkbox
+            label={
+              <>
+                Employé{" "}
+                {checkerNames[3] && (
+                  <Text span ml={5}>
+                    {checkerNames[3]}
+                  </Text>
+                )}
+                {(check3 || locked3) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check3}
+            onChange={() => handleCheckboxClick(3)}
+            disabled={!isEditing || check3 || locked3}
+            mt="sm"
+          />
         </div>
 
         {/* MODAL LOGIN */}
@@ -623,7 +696,128 @@ export default function ManifoldDetails({
             </Button>
           </Group>
         </Modal>
+        <div style={{ display: "none" }}>
+          {/* --- Version imprimable (invisible à l'écran) --- */}
+          <div
+            ref={printRef}
+            className="print-area"
+            style={{ padding: "20px" }}
+          >
+            <Title order={3} ta="center" mb="md">
+              Manifold N° {selectedManifold?.id ?? "—"}
+            </Title>
 
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginBottom: "1rem",
+              }}
+            >
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>De :</strong>
+                  </td>
+                  <td>{Demandeur || "—"}</td>
+                  <td></td>
+                  <td>
+                    <strong>Date :</strong>
+                  </td>
+                  <td>{dateCommande || "—"}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>A :</strong>
+                  </td>
+                  <td>{recepteur || "—"}</td>
+                  <td></td>
+                  <td>
+                    <strong>Code du Demandeur :</strong>
+                  </td>
+                  <td>{code1 || "—"}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Code Machine :</strong>
+                  </td>
+                  <td>{code3 || "—"}</td>
+                  <td></td>
+                  <td>
+                    <strong>Code du Recepteur :</strong>
+                  </td>
+                  <td>{code2 || "—"}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <Title order={4} mb="xs">
+              Liste des articles
+            </Title>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginTop: "10px",
+              }}
+            >
+              <thead>
+                <tr style={{ backgroundColor: "#f0f0f0" }}>
+                  <th>N° Article</th>
+                  <th>Article</th>
+                  <th>Fin Compteur </th>
+                  <th>Quantité</th>
+                  <th>Unité</th>
+                  <th>Commande</th>
+                </tr>
+              </thead>
+              <tbody>
+                {articles.map((a, idx) => (
+                  <tr key={a.id}>
+                    <td style={tdStyle}>{idx + 1}</td>
+                    <td style={tdStyle}>{a.NomArticle}</td>
+                    <td style={tdStyle}>{a.finCompteur}</td>
+                    <td style={tdStyle}>{a.quantite}</td>
+                    <td style={tdStyle}>{a.unite}</td>
+                    <td style={tdStyle}>{a.DPU}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div>Motif : {motif}</div>
+
+            <Divider my="md" />
+
+            <table
+              style={{ width: "100%", textAlign: "center", marginTop: "2rem" }}
+            >
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>Magasinier</strong>
+                  </td>
+                  <td>
+                    <strong>Responsable Achat</strong>
+                  </td>
+                  <td>
+                    <strong>Employé</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ height: "60px" }}>
+                    {checkerNames[1] || ""} {check1 && "✅"}
+                  </td>
+                  <td>
+                    {checkerNames[2] || ""} {check2 && "✅"}
+                  </td>
+                  <td>
+                    {checkerNames[3] || ""} {check3 && "✅"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
         {isEditing && (
           <Group mt="md">
             <Button color="#c94b06" onClick={handleSave}>

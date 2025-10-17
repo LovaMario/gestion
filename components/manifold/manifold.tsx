@@ -12,7 +12,8 @@ export type Manifold = {
   code2: string;
   code3: string;
   dateCommande: string;
-  articles: articles[];
+  articles: Article[];
+  motif: string
   check1: boolean;
   check2: boolean;
   check3: boolean;
@@ -24,7 +25,7 @@ export type Manifold = {
   checker3_nom: string | null;
 };
 
-export type articles = {
+export type Article = {
   id: number; // ID temporaire pour la gestion React (key, suppression)
   finCompteur: number;
   quantite: number;
@@ -32,7 +33,6 @@ export type articles = {
   DPU: string;
   unite: string;
   imputation: string;
-  Imputation?: string;
 };
 
 export default function ManifoldPage() {

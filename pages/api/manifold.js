@@ -101,6 +101,7 @@ export default async function handler(req, res) {
         code2,
         code3,
         dateCommande,
+        motif,
         check1,
         check2,
         check3,
@@ -114,10 +115,10 @@ export default async function handler(req, res) {
       // Insertion du Manifold principal
       const [result] = await db.query(
         `INSERT INTO manifold 
-          (Demandeur, recepteur, code1, code2, code3, dateCommande, 
+          (Demandeur, recepteur, code1, code2, code3, dateCommande, motif, 
            check1, check2, check3, locked1, locked2, locked3, 
            checker1_nom, checker2_nom, checker3_nom)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           Demandeur,
           recepteur,
@@ -125,6 +126,7 @@ export default async function handler(req, res) {
           code2,
           code3,
           dateCommande,
+          motif,
           check1 ? 1 : 0,
           check2 ? 1 : 0,
           check3 ? 1 : 0,
@@ -150,6 +152,7 @@ export default async function handler(req, res) {
         code2,
         code3,
         dateCommande,
+        motif,
         check1,
         check2,
         check3,
@@ -182,6 +185,7 @@ export default async function handler(req, res) {
         code2,
         code3,
         dateCommande,
+        motif,
         check1,
         check2,
         check3,
@@ -194,7 +198,7 @@ export default async function handler(req, res) {
 
       await db.query(
         `UPDATE manifold SET
-            Demandeur = ?, recepteur = ?, code1 = ?, code2 = ?, code3 = ?, dateCommande = ?,
+            Demandeur = ?, recepteur = ?, code1 = ?, code2 = ?, code3 = ?, dateCommande = ?, motif = ?,
             check1 = ?, check2 = ?, check3 = ?, 
             locked1 = ?, locked2 = ?, locked3 = ?,
             checker1_nom = ?, checker2_nom = ?, checker3_nom = ?
@@ -206,6 +210,7 @@ export default async function handler(req, res) {
           code2,
           code3,
           dateCommande,
+          motif,
           check1 ? 1 : 0,
           check2 ? 1 : 0,
           check3 ? 1 : 0,
