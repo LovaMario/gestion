@@ -14,14 +14,16 @@ const insertArticles = async (manifoldId, articles) => {
     art.finCompteur || "",
     art.DPU ?? 0,
     art.imputation ?? "",
+    // accept either per-article code3 or codeMachine
+    (art.code3 ?? art.codeMachine) || "",
   ]);
 
-  const placeholders = articles.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ");
+  const placeholders = articles.map(() => "(?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
 console.log("INSERT ARTICLES:", values);
 
   await db.query(
     `INSERT INTO articles_manifold 
-      (manifold_id, NomArticle, Quantite, unite, finCompteur, DPU, imputation)
+      (manifold_id, NomArticle, Quantite, unite, finCompteur, DPU, imputation, code3)
       VALUES ${placeholders}`,
     values
   );
@@ -46,7 +48,7 @@ export default async function handler(req, res) {
 
       const [articles] = await db.query(
         `SELECT id, manifold_id, NomArticle, Quantite, unite, finCompteur,
-         DPU, imputation 
+         DPU, imputation, code3 
          FROM articles_manifold 
          WHERE manifold_id IN (?)`,
         [ManifoldIds]
@@ -67,6 +69,7 @@ export default async function handler(req, res) {
           finCompteur: article.finCompteur,
           DPU: article.DPU,
           imputation: article.imputation,
+          code3: article.code3,
         });
         return acc;
       }, {});
@@ -101,7 +104,6 @@ export default async function handler(req, res) {
         recepteur,
         code1,
         code2,
-        code3,
         dateCommande,
         motif,
         check1,
@@ -117,16 +119,15 @@ export default async function handler(req, res) {
       // Insertion du Manifold principal
       const [result] = await db.query(
         `INSERT INTO manifold 
-          (Demandeur, recepteur, code1, code2, code3, dateCommande, motif, 
+          (Demandeur, recepteur, code1, code2, dateCommande, motif, 
            check1, check2, check3, locked1, locked2, locked3, 
            checker1_nom, checker2_nom, checker3_nom)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           Demandeur,
           recepteur,
           code1,
           code2,
-          code3,
           dateCommande,
           motif,
           check1 ? 1 : 0,
@@ -152,7 +153,6 @@ export default async function handler(req, res) {
         recepteur,
         code1,
         code2,
-        code3,
         dateCommande,
         motif,
         check1,
@@ -185,7 +185,6 @@ export default async function handler(req, res) {
         recepteur,
         code1,
         code2,
-        code3,
         dateCommande,
         motif,
         check1,
@@ -200,7 +199,7 @@ export default async function handler(req, res) {
 
       await db.query(
         `UPDATE manifold SET
-            Demandeur = ?, recepteur = ?, code1 = ?, code2 = ?, code3 = ?, dateCommande = ?, motif = ?,
+            Demandeur = ?, recepteur = ?, code1 = ?, code2 = ?, dateCommande = ?, motif = ?,
             check1 = ?, check2 = ?, check3 = ?, 
             locked1 = ?, locked2 = ?, locked3 = ?,
             checker1_nom = ?, checker2_nom = ?, checker3_nom = ?
@@ -210,7 +209,6 @@ export default async function handler(req, res) {
           recepteur,
           code1,
           code2,
-          code3,
           dateCommande,
           motif,
           check1 ? 1 : 0,

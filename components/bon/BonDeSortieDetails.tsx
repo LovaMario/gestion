@@ -548,7 +548,7 @@ export default function BonDeSortieDetails({
 
   // --- RENDU ---
   return (
-    <ScrollArea h={800} type="scroll">
+    <ScrollArea h={700} type="scroll">
       <Card shadow="xl" radius={"lg"} mb={8} m={10}>
         {/* 👇 Contenu à imprimer */}
         <div className="form-area">

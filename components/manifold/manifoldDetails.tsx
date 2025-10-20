@@ -239,9 +239,8 @@ export default function ManifoldDetails({
       id: isUpdating ? selectedManifold.id : undefined,
       Demandeur: Demandeur,
       recepteur: recepteur,
-      code1: code1 ?? 0,
-      code2: code2 ?? 0,
-      code3: code3 ?? 0,
+  code1: code1 ?? 0,
+  code2: code2 ?? 0,
       dateCommande: dateCommande || "",
       motif,
 
@@ -367,9 +366,8 @@ export default function ManifoldDetails({
         id: manifoldId,
         Demandeur: Demandeur,
         recepteur: recepteur,
-        code1: code1 ?? 0,
-        code2: code2 ?? 0,
-        code3: code3 ?? 0,
+  code1: code1 ?? 0,
+  code2: code2 ?? 0,
         dateCommande: dateCommande || "",
         motif,
 
@@ -412,7 +410,7 @@ export default function ManifoldDetails({
   };
 
   return (
-    <ScrollArea h={800} type="scroll">
+    <ScrollArea h={700} type="scroll">
       <Card shadow="xl" radius="lg" mb={8} m={10}>
         <div className="form-area">
           <Title order={3}>Manifold</Title>
@@ -428,12 +426,14 @@ export default function ManifoldDetails({
           </Title>
           <Group grow>
             <TextInput
+              placeholder="Votre atelier"
               label="De"
               value={Demandeur}
               onChange={(e) => setDemandeur(e.currentTarget.value)}
               disabled={!isEditing}
             />
             <TextInput
+              placeholder="****"
               label="Code 1 (Demandeur)"
               value={code1}
               onChange={(e) => setCode1(e.currentTarget.value)}
@@ -443,12 +443,14 @@ export default function ManifoldDetails({
 
           <Group grow mt="sm">
             <TextInput
+              placeholder="Le nom de l'atelier que vous allez adressez ce manifold"
               label="À"
               value={recepteur}
               onChange={(e) => setRecepteur(e.currentTarget.value)}
               disabled={!isEditing}
             />
             <TextInput
+              placeholder="****"
               label="Code 2 (Recepteur)"
               value={code2}
               onChange={(e) => setCode2(e.currentTarget.value)}
@@ -464,16 +466,11 @@ export default function ManifoldDetails({
               onChange={(e) => setDateCommande(e.currentTarget.value)}
               disabled={!isEditing}
             />
-            <TextInput
-              label="Code Machine"
-              value={code3}
-              onChange={(e) => setCode3(e.currentTarget.value)}
-              disabled={!isEditing}
-            />
           </Group>
-          
-            <Divider my="md" label="Articles" labelPosition="center" />
-          
+
+          <Divider my="md" label="Articles" labelPosition="center" />
+
+          <Group grow mt="sm"></Group>
 
           {articles.map((art, i) => (
             <Card
@@ -527,6 +524,7 @@ export default function ManifoldDetails({
                   disabled={!isEditing}
                 />
                 <TextInput
+                  placeholder="U, L, Cm, m, T, ..."
                   label="Unité"
                   value={art.unite}
                   onChange={(d) =>
@@ -536,7 +534,7 @@ export default function ManifoldDetails({
                   disabled={!isEditing}
                 />
                 <TextInput
-                  label="imputation"
+                  label="Imputation"
                   value={art.imputation ?? ""}
                   onChange={(i) =>
                     handleArticleChange(
@@ -549,16 +547,28 @@ export default function ManifoldDetails({
                   disabled={!isEditing}
                 />
               </Group>
-              <TextInput
-                placeholder="DPU"
-                label="DPU"
-                value={art.DPU}
-                onChange={(d) =>
-                  handleArticleChange(art.id, "DPU", d.currentTarget.value)
-                }
-                mt="sm"
-                disabled={!isEditing}
-              />
+              <Group>
+                <TextInput
+                  placeholder="DPU"
+                  label="DPU"
+                  value={art.DPU}
+                  onChange={(d) =>
+                    handleArticleChange(art.id, "DPU", d.currentTarget.value)
+                  }
+                  mt="sm"
+                  disabled={!isEditing}
+                />
+                <TextInput
+                  placeholder="Le code du machine"
+                  label="Code Machine"
+                  value={art.code3 ?? ""}
+                  onChange={(e) =>
+                    handleArticleChange(art.id, "code3", e.currentTarget.value)
+                  }
+                  disabled={!isEditing}
+                  mt="sm"
+                />
+              </Group>
               <NumberInput
                 label="Fin Compteur"
                 value={art.finCompteur}
@@ -734,9 +744,9 @@ export default function ManifoldDetails({
                 </tr>
                 <tr>
                   <td>
-                    <strong>Code Machine :</strong>
+                    <strong></strong>
                   </td>
-                  <td>{code3 || "—"}</td>
+                  <td></td>
                   <td></td>
                   <td>
                     <strong>Code du Recepteur :</strong>
@@ -759,18 +769,20 @@ export default function ManifoldDetails({
               <thead>
                 <tr style={{ backgroundColor: "#f0f0f0" }}>
                   <th style={thStyle}>Art N°</th>
+                  <th style={thStyle}>Code Machine</th>
                   <th style={thStyle}>Article</th>
                   <th style={thStyle}>Fin Compteur </th>
                   <th style={thStyle}>Imputation </th>
                   <th style={thStyle}>Quantité</th>
                   <th style={thStyle}>Unité</th>
-                  <th style={thStyle}>Commande</th>
+                  <th style={thStyle}>DPU</th>
                 </tr>
               </thead>
               <tbody>
                 {articles.map((a, idx) => (
                   <tr key={a.id}>
                     <td style={tdStyle}>{idx + 1}</td>
+                    <td style={tdStyle}>{code3 || "—"}</td>
                     <td style={tdStyle}>{a.NomArticle}</td>
                     <td style={tdStyle}>{a.finCompteur}</td>
                     <td style={tdStyle}>{a.imputation}</td>

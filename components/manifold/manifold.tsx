@@ -33,6 +33,7 @@ export type Article = {
   DPU: string;
   unite: string;
   imputation: string;
+  code3?: string; // code machine par article
 };
 
 export default function ManifoldPage() {
