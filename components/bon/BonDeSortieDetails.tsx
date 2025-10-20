@@ -27,7 +27,6 @@ import { IconTrash } from "@tabler/icons-react";
 const thStyle = {
   border: "1px solid #ccc",
   padding: "6px",
-  textAlign: "left",
 };
 
 const tdStyle = {
@@ -73,6 +72,7 @@ type Props = {
     updatedBon: BonDeSortie,
     shouldExitEditing?: boolean
   ) => void;
+  forceReset: number;
 };
 
 export default function BonDeSortieDetails({
@@ -83,6 +83,7 @@ export default function BonDeSortieDetails({
   isEditing,
   onSaveAndReturn,
   setIsEditing,
+  forceReset,
 }: Props) {
   // --- ÉTATS & HOOKS ---
   const [magasinOptions, setMagasinOption] = useState(["Central", "Vato"]);
@@ -354,7 +355,8 @@ export default function BonDeSortieDetails({
       // Nouveau bon
       handleNewBon();
     }
-  }, [selectedBonDeSortie, isEditing]);
+    // Ajout de forceReset dans les dépendances pour forcer la réinitialisation
+  }, [selectedBonDeSortie, isEditing, forceReset]);
 
   // --- GESTION ENREGISTREMENT (handleSave) ---
   const handleSave = async () => {
@@ -666,9 +668,9 @@ export default function BonDeSortieDetails({
               placeholder="Sélectionner ou ajouter un atelier"
             />
           </Group>
-          {isEditing && (
+          
             <Divider my="md" label="Articles" labelPosition="center" />
-          )}
+          
           {isEditing && (
             <Title order={4} mt="md">
               Détails des Articles
@@ -876,7 +878,7 @@ export default function BonDeSortieDetails({
           <Checkbox
             label={
               <>
-                Employé{" "}
+                Receptionnaire{" "}
                 {checkerNames[3] && (
                   <Text span ml={5}>
                     {checkerNames[3]}
@@ -989,13 +991,13 @@ export default function BonDeSortieDetails({
             >
               <thead>
                 <tr style={{ backgroundColor: "#f0f0f0" }}>
-                  <th>N° Bon</th>
-                  <th>Code Article</th>
-                  <th>Libellé</th>
-                  <th>Qté</th>
-                  <th>Unité</th>
-                  <th>Imputation</th>
-                  <th>Commande</th>
+                  <th style={thStyle}>N° Bon</th>
+                  <th style={tdStyle}>Code Article</th>
+                  <th style={tdStyle}>Libellé</th>
+                  <th style={tdStyle}>Qté</th>
+                  <th style={tdStyle}>Unité</th>
+                  <th style={tdStyle}>Imputation</th>
+                  <th style={tdStyle}>Commande</th>
                 </tr>
               </thead>
               <tbody>
@@ -1004,7 +1006,7 @@ export default function BonDeSortieDetails({
                     <td style={tdStyle}>{idx + 1}</td>
                     <td style={tdStyle}>{a.codeArticle}</td>
                     <td style={tdStyle}>{a.libelleArticle}</td>
-                    <td style={tdStyle}>{a.quantite}</td>
+                    <td style={tdStyle}>{a.quantite !== undefined ? a.quantite.toString() : ''}</td>
                     <td style={tdStyle}>{a.unite}</td>
                     <td style={tdStyle}>
                       {a.imputationCode} - {a.imputation}

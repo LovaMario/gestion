@@ -48,10 +48,7 @@ type Props = {
 };
 
 export default function ManifoldDetails({
-  Manifold,
-  setManifold,
   selectedManifold,
-  setSelectedManifold,
   isEditing,
   setIsEditing,
   onSaveAndReturn,
@@ -59,12 +56,12 @@ export default function ManifoldDetails({
   const thStyle = {
     border: "1px solid #ccc",
     padding: "6px",
-    textAlign: "left",
   };
 
   const tdStyle = {
     border: "1px solid #ccc",
     padding: "6px",
+    justifyContent: "center",
   };
 
   const [type, toggle] = useToggle(["Se connecter", "Créer un compte"]);
@@ -133,7 +130,6 @@ export default function ManifoldDetails({
   const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
   const [matricule, setMatricule] = useState("");
   const [password, setPassword] = useState("");
-  const [manuelle, setManuelle] = useState<number | undefined>(undefined);
   const [motif, setMotif] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -475,9 +471,9 @@ export default function ManifoldDetails({
               disabled={!isEditing}
             />
           </Group>
-          {isEditing && (
+          
             <Divider my="md" label="Articles" labelPosition="center" />
-          )}
+          
 
           {articles.map((art, i) => (
             <Card
@@ -540,14 +536,13 @@ export default function ManifoldDetails({
                   disabled={!isEditing}
                 />
                 <TextInput
-                  placeholder="Imputée à"
-                  label="Imputation"
-                  value={art.imputation}
-                  onChange={(d) =>
+                  label="imputation"
+                  value={art.imputation ?? ""}
+                  onChange={(i) =>
                     handleArticleChange(
                       art.id,
                       "imputation",
-                      d.currentTarget.value
+                      i.currentTarget.value
                     )
                   }
                   mt="sm"
@@ -647,7 +642,7 @@ export default function ManifoldDetails({
           <Checkbox
             label={
               <>
-                Employé{" "}
+                Receptionnaire{" "}
                 {checkerNames[3] && (
                   <Text span ml={5}>
                     {checkerNames[3]}
@@ -763,12 +758,13 @@ export default function ManifoldDetails({
             >
               <thead>
                 <tr style={{ backgroundColor: "#f0f0f0" }}>
-                  <th>N° Article</th>
-                  <th>Article</th>
-                  <th>Fin Compteur </th>
-                  <th>Quantité</th>
-                  <th>Unité</th>
-                  <th>Commande</th>
+                  <th style={thStyle}>Art N°</th>
+                  <th style={thStyle}>Article</th>
+                  <th style={thStyle}>Fin Compteur </th>
+                  <th style={thStyle}>Imputation </th>
+                  <th style={thStyle}>Quantité</th>
+                  <th style={thStyle}>Unité</th>
+                  <th style={thStyle}>Commande</th>
                 </tr>
               </thead>
               <tbody>
@@ -777,6 +773,7 @@ export default function ManifoldDetails({
                     <td style={tdStyle}>{idx + 1}</td>
                     <td style={tdStyle}>{a.NomArticle}</td>
                     <td style={tdStyle}>{a.finCompteur}</td>
+                    <td style={tdStyle}>{a.imputation}</td>
                     <td style={tdStyle}>{a.quantite}</td>
                     <td style={tdStyle}>{a.unite}</td>
                     <td style={tdStyle}>{a.DPU}</td>

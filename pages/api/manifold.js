@@ -13,14 +13,15 @@ const insertArticles = async (manifoldId, articles) => {
     art.unite || "",
     art.finCompteur || "",
     art.DPU ?? 0,
-    art.imputation || "",
+    art.imputation ?? "",
   ]);
 
   const placeholders = articles.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ");
+console.log("INSERT ARTICLES:", values);
 
   await db.query(
     `INSERT INTO articles_manifold 
-      (manifold_id, NomArticle, Quantite, unite, finCompteur, DPU, Imputation) 
+      (manifold_id, NomArticle, Quantite, unite, finCompteur, DPU, imputation)
       VALUES ${placeholders}`,
     values
   );
@@ -44,7 +45,8 @@ export default async function handler(req, res) {
       const ManifoldIds = Manifolds.map((b) => b.id);
 
       const [articles] = await db.query(
-        `SELECT id, manifold_id, NomArticle, Quantite, unite, finCompteur, DPU, Imputation 
+        `SELECT id, manifold_id, NomArticle, Quantite, unite, finCompteur,
+         DPU, imputation 
          FROM articles_manifold 
          WHERE manifold_id IN (?)`,
         [ManifoldIds]
@@ -64,7 +66,7 @@ export default async function handler(req, res) {
           unite: article.unite,
           finCompteur: article.finCompteur,
           DPU: article.DPU,
-          Imputation: article.Imputation,
+          imputation: article.imputation,
         });
         return acc;
       }, {});

@@ -46,6 +46,7 @@ export default function BonDeSortiePage() {
     useState<BonDeSortie | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [forceReset, setForceReset] = useState(0);
 
   // ... (Logique de chargement et de gestion des états inchangée)
   useEffect(() => {
@@ -78,6 +79,7 @@ export default function BonDeSortiePage() {
   const handleNewBon = () => {
     setSelectedBonDeSortie(null);
     setIsEditing(true);
+    setForceReset((prev) => prev + 1);
   };
 
   // 🎯 DANS BonDeSortie.tsx (composant parent)
@@ -120,11 +122,7 @@ export default function BonDeSortiePage() {
       <Group mb="md">
         <Button
           color="#c94b06"
-          onClick={() => {
-            setSelectedBonDeSortie(null); // Ceci déclenchera le useEffect dans BonDeSortieDetails
-            setIsEditing(true);
-            handleNewBon;
-          }}
+          onClick={handleNewBon}
         >
           Nouveau Bon de Sortie
         </Button>
@@ -142,6 +140,7 @@ export default function BonDeSortiePage() {
         {/* Colonne Détails */}
         <div style={{ flex: 3, overflowY: "auto" }}>
           <BonDeSortieDetails
+            key={forceReset}
             BonsDeSortie={bonsDeSortie}
             setBonsDeSortie={setBonsDeSortie}
             selectedBonDeSortie={selectedBonDeSortie}
@@ -149,6 +148,7 @@ export default function BonDeSortiePage() {
             isEditing={isEditing}
             setIsEditing={setIsEditing}
             onSaveAndReturn={handleSaveAndReturn}
+            forceReset={forceReset}
           />
         </div>
 
