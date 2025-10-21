@@ -87,7 +87,7 @@ export default function ManifoldListe({
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
-                  Numéro manifold
+                  N° manifold
                 </th>
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
