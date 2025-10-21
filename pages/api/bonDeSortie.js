@@ -233,22 +233,25 @@ export default async function handler(req, res) {
 
       // 2. Supprimer les anciens articles et les réinsérer
       // 💡 AJOUT DU TRY...CATCH POUR ISOLER L'ERREUR D'ARTICLE (cause probable du 500)
-      try {
-        await db.query(
-          "DELETE FROM articles_sortie WHERE bon_de_sortie_id = ?",
-          [id]
-        );
-        await insertArticles(id, articles);
-      } catch (articleError) {
-        // Loguer l'erreur mais NE PAS la renvoyer comme 500 si l'UPDATE principal a réussi.
-        // Cela permet de ne pas bloquer le client si l'erreur est mineure (ex: articles vides/malformés).
-        // SI vous voulez être STRICT, remplacez le catch par 'throw articleError'.
-        console.error(
-          "Erreur lors de la suppression/réinsertion des articles pour Bon ID:",
-          id,
-          articleError
-        );
+      // Si le client n'a pas fourni de tableau `articles`, ne pas toucher
+      // aux articles existants pour éviter de les effacer accidentellement.
+      if (Array.isArray(articles)) {
+        try {
+          await db.query(
+            "DELETE FROM articles_sortie WHERE bon_de_sortie_id = ?",
+            [id]
+          );
+          await insertArticles(id, articles);
+        } catch (articleError) {
+          // Loguer l'erreur mais NE PAS la renvoyer comme 500 si l'UPDATE principal a réussi.
+          console.error(
+            "Erreur lors de la suppression/réinsertion des articles pour Bon ID:",
+            id,
+            articleError
+          );
+        }
       }
+      
       const updatedBonDeSortie = {
         ...req.body,
         articles: articles || [],
