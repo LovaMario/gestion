@@ -75,6 +75,24 @@ export default function ManifoldDetails({
     documentTitle: `manifold_${
       typeof quantite !== "undefined" ? quantite : "Nouveau"
     }`,
+    // Wait a bit for images/resources to load before printing
+    onBeforeGetContent: async () => {
+      try {
+        // Give the browser a short time to fetch images/styles used in the print area
+        await new Promise((r) => setTimeout(r, 150));
+      } catch (e) {
+        console.warn("onBeforeGetContent error:", e);
+      }
+      return undefined;
+    },
+    onAfterPrint: () => {
+      // small cleanup or UX feedback could be placed here
+      console.log("Print completed");
+    },
+    // suppress react-to-print internal errors from bubbling to devtools
+    onPrintError: (err: unknown) => {
+      console.error("Print error (suppressed):", err);
+    },
   } as any);
 
   // --- FORMULAIRE D'AUTHENTIFICATION (pour les checks) ---
@@ -230,6 +248,13 @@ export default function ManifoldDetails({
     }
   }, [selectedManifold, isEditing]);
 
+  // Safe renderer for numeric cells to avoid React complaining about NaN children
+  const renderNumber = (value: any) => {
+    if (value === null || typeof value === "undefined") return "—";
+    const n = typeof value === "string" ? parseFloat(value) : value;
+    return typeof n === "number" && !Number.isNaN(n) ? n : "—";
+  };
+
   // --- SAVE ---
   const handleSave = async () => {
     const isUpdating =
@@ -239,8 +264,8 @@ export default function ManifoldDetails({
       id: isUpdating ? selectedManifold.id : undefined,
       Demandeur: Demandeur,
       recepteur: recepteur,
-  code1: code1 ?? 0,
-  code2: code2 ?? 0,
+      code1: code1 ?? 0,
+      code2: code2 ?? 0,
       dateCommande: dateCommande || "",
       motif,
 
@@ -366,8 +391,8 @@ export default function ManifoldDetails({
         id: manifoldId,
         Demandeur: Demandeur,
         recepteur: recepteur,
-  code1: code1 ?? 0,
-  code2: code2 ?? 0,
+        code1: code1 ?? 0,
+        code2: code2 ?? 0,
         dateCommande: dateCommande || "",
         motif,
 
@@ -701,7 +726,17 @@ export default function ManifoldDetails({
             </Button>
           </Group>
         </Modal>
-        <div style={{ display: "none" }}>
+        {/* place print area off-screen instead of display:none so react-to-print can load resources */}
+        <div
+          style={{
+            position: "fixed",
+            left: -9999,
+            top: 0,
+            width: 0,
+            height: 0,
+            overflow: "hidden",
+          }}
+        >
           {/* --- Version imprimable (invisible à l'écran) --- */}
           <div
             ref={printRef}
@@ -782,11 +817,11 @@ export default function ManifoldDetails({
                 {articles.map((a, idx) => (
                   <tr key={a.id}>
                     <td style={tdStyle}>{idx + 1}</td>
-                    <td style={tdStyle}>{code3 || "—"}</td>
+                    <td style={tdStyle}>{a.code3 || "—"}</td>
                     <td style={tdStyle}>{a.NomArticle}</td>
-                    <td style={tdStyle}>{a.finCompteur}</td>
+                    <td style={tdStyle}>{renderNumber(a.finCompteur)}</td>
                     <td style={tdStyle}>{a.imputation}</td>
-                    <td style={tdStyle}>{a.quantite}</td>
+                    <td style={tdStyle}>{renderNumber(a.quantite)}</td>
                     <td style={tdStyle}>{a.unite}</td>
                     <td style={tdStyle}>{a.DPU}</td>
                   </tr>

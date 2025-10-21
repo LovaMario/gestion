@@ -992,7 +992,6 @@ export default function BonDeSortieDetails({
               <thead>
                 <tr style={{ backgroundColor: "#f0f0f0" }}>
                   <th style={thStyle}>N° Bon</th>
-                  <th style={tdStyle}>Code Article</th>
                   <th style={tdStyle}>Libellé</th>
                   <th style={tdStyle}>Qté</th>
                   <th style={tdStyle}>Unité</th>
@@ -1004,7 +1003,6 @@ export default function BonDeSortieDetails({
                 {articles.map((a, idx) => (
                   <tr key={a.id}>
                     <td style={tdStyle}>{idx + 1}</td>
-                    <td style={tdStyle}>{a.codeArticle}</td>
                     <td style={tdStyle}>{a.libelleArticle}</td>
                     <td style={tdStyle}>{a.quantite !== undefined ? a.quantite.toString() : ''}</td>
                     <td style={tdStyle}>{a.unite}</td>

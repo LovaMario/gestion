@@ -109,11 +109,7 @@ export default function ManifoldListe({
                 >
                   Code 2
                 </th>
-                <th
-                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
-                >
-                  Code machine
-                </th>
+            
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
@@ -175,14 +171,6 @@ export default function ManifoldListe({
                     }}
                   >
                     {Manifold.code2}
-                  </td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      border: "1px solid #a59a9aff",
-                    }}
-                  >
-                    {Manifold.code3}
                   </td>
                   <td
                     style={{
