@@ -1,23 +1,18 @@
 "use client";
-import { Button, Group } from "@mantine/core";
+import { AppShell, Button, Group } from "@mantine/core";
 import React, { useState, useEffect } from "react";
 import ManifoldDetails from "./manifoldDetails";
 import ManifoldListe from "./manifoldListe";
 
 export type Manifold = {
   id: number;
-  quantite: number;
-  NomArticle: string;
   Demandeur: string;
   recepteur: string;
-  imputation: string;
-  Imputation?: string;
   code1: string;
   code2: string;
   code3: string;
-  finCompteur: number;
-  DPU: string;
   dateCommande: string;
+  articles: articles[];
   check1: boolean;
   check2: boolean;
   check3: boolean;
@@ -27,6 +22,17 @@ export type Manifold = {
   checker1_nom: string | null;
   checker2_nom: string | null;
   checker3_nom: string | null;
+};
+
+export type articles = {
+  id: number; // ID temporaire pour la gestion React (key, suppression)
+  finCompteur: number;
+  quantite: number;
+  NomArticle: string;
+  DPU: string;
+  unite: string;
+  imputation: string;
+  Imputation?: string;
 };
 
 export default function ManifoldPage() {
@@ -42,31 +48,27 @@ export default function ManifoldPage() {
   );
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleSaveAndReturn = (updatedManifold: Manifold) => {
-    // Mise à jour ou ajout si nouveau
-    setManifold((prev) => {
-      const exists = prev.find((b) => b.id === updatedManifold.id);
-      if (exists) {
-        return prev.map((b) =>
-          b.id === updatedManifold.id ? updatedManifold : b
-        );
-      } else {
-        return [...prev, updatedManifold];
-      }
-    });
-    setSelectedManifold(updatedManifold);
-    setIsEditing(false);
-  };
   // Charger les manifolds existants au montage
   useEffect(() => {
     const fetchManifolds = async () => {
-      setLoading(true);
       try {
         const res = await fetch("/api/manifold");
-        const data = await res.json();
-        setManifold(Array.isArray(data) ? data : []);
-      } catch (e) {
-        setManifold([]);
+        if (!res.ok) throw new Error("Erreur lors du fetch");
+        const data: Manifold[] = await res.json();
+        const transformed = data.map((b) => ({
+          ...b,
+          checker1_nom: b.checker1_nom || null,
+          checker2_nom: b.checker2_nom || null,
+          checker3_nom: b.checker3_nom || null,
+          checkerNames: {
+            1: b.checker1_nom || "",
+            2: b.checker2_nom || "",
+            3: b.checker3_nom || "",
+          },
+        })) as Manifold[];
+        setManifold(transformed);
+      } catch (err) {
+        console.error("Erreur chargement BSM :", err);
       } finally {
         setLoading(false);
       }
@@ -74,39 +76,76 @@ export default function ManifoldPage() {
     fetchManifolds();
   }, []);
 
+  const handleNewBon = () => {
+    setSelectedManifold(null);
+    setIsEditing(true);
+  };
+
+  const handleSaveAndReturn = async (
+    updatedManifold: Manifold,
+    shouldExitEditing: boolean = true
+  ) => {
+    try {
+      const res = await fetch("/api/manifold");
+      if (!res.ok) throw new Error("Erreur lors du fetch");
+      const data: Manifold[] = await res.json();
+      const transformed = data.map((b) => ({
+        ...b,
+        checker1_nom: b.checker1_nom || null,
+        checker2_nom: b.checker2_nom || null,
+        checker3_nom: b.checker3_nom || null,
+        checkerNames: {
+          1: b.checker1_nom || "",
+          2: b.checker2_nom || "",
+          3: b.checker3_nom || "",
+        },
+      })) as Manifold[];
+      setManifold(transformed);
+    } catch (err) {
+      console.error("Erreur rechargement BSM :", err);
+    }
+
+    setSelectedManifold(updatedManifold);
+    if (shouldExitEditing) {
+      setIsEditing(false);
+    }
+  };
+
   return (
-    <div>
-      <Group>
-        <Button
-          justify="flex-start"
-          onClick={handleNewManifold}
-          color="#c94b06"
-        >
-          Nouveau Manifold
-        </Button>
-      </Group>
-      <div style={{ display: "flex", gap: "2rem" }}>
-        <div style={{ flex: 3 }}>
-          <ManifoldDetails
-            Manifold={manifold}
-            setManifold={setManifold}
-            selectedManifold={selectedManifold}
-            setSelectedManifold={setSelectedManifold}
-            isEditing={isEditing}
-            setIsEditing={setIsEditing}
-            onSaveAndReturn={handleSaveAndReturn}
-          />
-        </div>
-        <div style={{ flex: 2 }}>
-          <ManifoldListe
-            Manifold={manifold}
-            setManifold={setManifold}
-            setSelectedManifold={setSelectedManifold}
-            setIsEditing={setIsEditing}
-            loading={loading}
-          />
+    <AppShell style={{ padding: "2rem" }}>
+      <div>
+        <Group>
+          <Button
+            justify="flex-start"
+            onClick={handleNewManifold}
+            color="#c94b06"
+          >
+            Nouveau Manifold
+          </Button>
+        </Group>
+        <div style={{ display: "flex", gap: "2rem" }}>
+          <div style={{ flex: 3 }}>
+            <ManifoldDetails
+              Manifold={manifold}
+              setManifold={setManifold}
+              selectedManifold={selectedManifold}
+              setSelectedManifold={setSelectedManifold}
+              isEditing={isEditing}
+              setIsEditing={setIsEditing}
+              onSaveAndReturn={handleSaveAndReturn}
+            />
+          </div>
+          <div style={{ flex: 2 }}>
+            <ManifoldListe
+              Manifold={manifold}
+              setManifold={setManifold}
+              setSelectedManifold={setSelectedManifold}
+              setIsEditing={setIsEditing}
+              loading={loading}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

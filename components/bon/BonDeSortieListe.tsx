@@ -35,11 +35,14 @@ export default function BonDeSortieListe({
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredBons = bonsDeSortie.filter((b) =>{
+  const filteredBons = bonsDeSortie.filter((b) => {
     const term = searchTerm.toLowerCase();
     return (
-      (b.codeArticle?.toLowerCase().includes(term)) ||
-      (b.id !== undefined && b.id !== null && b.id.toString().toLowerCase().includes(term))
+      b.id !== undefined &&
+      b.id !== null &&
+      b.id.toString().toLowerCase().includes(term) ||
+      String(b.manuelle).toLowerCase().includes(term) ||
+      String(b.piece).toLowerCase().includes(term)
     );
   });
 
@@ -89,11 +92,7 @@ export default function BonDeSortieListe({
                 >
                   N° BSM
                 </th>
-                <th
-                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
-                >
-                  Code article
-                </th>
+
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
@@ -107,12 +106,18 @@ export default function BonDeSortieListe({
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
-                  Quantité
+                  Magasin
+                </th>
+
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
+                  Département
                 </th>
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
-                  Actions
+                  Action
                 </th>
               </tr>
             </thead>
@@ -121,7 +126,9 @@ export default function BonDeSortieListe({
                 <tr
                   // 🎯 CORRECTION: Utilise bon.id s'il est valide (> 0), sinon utilise
                   // une clé composite temporaire (ID de la pièce + index de la liste)
-                  key={bon.id && bon.id > 0 ? bon.id : `temp-${bon.piece}-${index}`}
+                  key={
+                    bon.id && bon.id > 0 ? bon.id : `temp-${bon.piece}-${index}`
+                  }
                   style={{ cursor: "pointer" }}
                   onClick={() => {
                     setSelectedBonDeSortie(bon);
@@ -136,14 +143,7 @@ export default function BonDeSortieListe({
                   >
                     {bon.id}
                   </td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      border: "1px solid #a59a9aff",
-                    }}
-                  >
-                    {bon.codeArticle}
-                  </td>
+
                   <td
                     style={{
                       textAlign: "center",
@@ -166,8 +166,17 @@ export default function BonDeSortieListe({
                       border: "1px solid #a59a9aff",
                     }}
                   >
-                    {bon.quantite}
+                    {bon.magasin}
                   </td>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
+                    {bon.departement}
+                  </td>
+
                   <td
                     style={{
                       textAlign: "center",

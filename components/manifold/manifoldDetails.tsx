@@ -1,10 +1,12 @@
 "use client";
+
 import React, { useEffect, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
 import {
   Button,
   Card,
   Checkbox,
+  Divider,
   Group,
   Modal,
   NumberInput,
@@ -15,8 +17,30 @@ import {
   Title,
 } from "@mantine/core";
 import { Manifold } from "./manifold";
-import { useForm } from "@mantine/form";
-import { useToggle } from "@mantine/hooks";
+import { IconTrash } from "@tabler/icons-react";
+
+// --- TYPES ---
+export type Article = {
+  id: number;
+  NomArticle: string;
+  quantite: number | undefined;
+  finCompteur: number | undefined;
+  unite: string;
+  DPU: string;
+  imputation: string;
+};
+
+// Fonction utilitaire pour créer un article vide
+let nextTempId = 1;
+const createEmptyArticle = (): Article => ({
+  id: nextTempId++,
+  NomArticle: "",
+  quantite: undefined,
+  unite: "",
+  imputation: "",
+  finCompteur: undefined,
+  DPU: "",
+});
 
 type Props = {
   Manifold: Manifold[];
@@ -26,7 +50,7 @@ type Props = {
   isEditing: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   onSaveAndReturn: (
-    updatedmanifold: Manifold,
+    updatedManifold: Manifold,
     shouldExitEditing?: boolean
   ) => void;
 };
@@ -55,72 +79,104 @@ export default function ManifoldDetails({
     {}
   );
 
-  // --- ÉTATS MODAL/CONNEXION ---
-  const [opened, setOpened] = useState(false);
-  const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
-  const [modalFor, setModalFor] = useState<number | null>(null);
-  const [matricule, setMatricule] = useState<string>("");
-  const [password, setPassword] = useState("");
-
-  // Champs Manifold
-  const [NomArticle, setNomArticle] = useState("");
+  // --- REF POUR IMPRESSION ---
+  // --- IMPRESSION ---
+  const printRef = useRef<HTMLDivElement>(null);
+  const [quantite, setQuantite] = useState<number | undefined>(undefined);
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `Manifold_${NomArticle ? NomArticle : "Nouveau"}`,
+    documentTitle: `manifold_${
+      typeof quantite !== "undefined" ? quantite : "Nouveau"
+    }`,
   } as any);
+
+  const getDefaultArticle = (): Article => ({
+    id: Date.now(),
+    NomArticle: "",
+    quantite: undefined,
+    finCompteur: undefined,
+    DPU: "",
+    unite: "",
+    imputation: "",
+  });
+
+  // --- ÉTATS ---
+  const [Nomarticle, setNomArticle] = useState("");
   const [Demandeur, setDemandeur] = useState("");
   const [recepteur, setRecepteur] = useState("");
-  const [imputation, setImputation] = useState("");
-  const [quantite, setQuantite] = useState<number | undefined>(undefined);
   const [code1, setCode1] = useState("");
   const [code2, setCode2] = useState("");
   const [code3, setCode3] = useState("");
-  const [finCompteur, setFinCompteur] = useState<number | undefined>(undefined);
-  const [DPU, setDPU] = useState("");
   const [dateCommande, setDateCommande] = useState("");
   const [submitted, setSubmitted] = useState(false);
-
-  // pour gérer reset seulement quand on entre en edition
+  const [check1, setCheck1] = useState(false);
+  const [check2, setCheck2] = useState(false);
+  const [check3, setCheck3] = useState(false);
   const prevIsEditingRef = useRef<boolean>(isEditing);
 
-  // --- GESTION MODAL ---
+  const [locked1, setLocked1] = useState(false);
+  const [locked2, setLocked2] = useState(false);
+  const [locked3, setLocked3] = useState(false);
+  const [checkerNames, setCheckerNames] = useState<{ [key: number]: string }>(
+    {}
+  );
+  const [opened, setOpened] = useState(false);
+  const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
+  const [matricule, setMatricule] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleCheckboxClick = (index: number) => {
-    if (!isEditing) return;
-    setActiveCheckbox(index);
-    setOpened(true);
+  const [articles, setArticles] = useState<Article[]>([]);
+
+  const handleAddArticle = () => {
+    setArticles((prev) => [...prev, createEmptyArticle()]);
   };
 
-  // --- GESTION NOUVEAU BON ---
+  const handleRemoveArticle = (idToRemove: number) => {
+    setArticles((prev) => prev.filter((article) => article.id !== idToRemove));
+  };
 
-  // Harmonisation avec BonDeSortieDetails
-  const handleNewManifold = () => {
+  const handleArticleChange = (
+    idToUpdate: number,
+    field: keyof Article,
+    value: any
+  ) => {
+    setArticles((prev) =>
+      prev.map((article) =>
+        article.id === idToUpdate ? { ...article, [field]: value } : article
+      )
+    );
+  };
+
+  const handleNewBon = () => {
+    // Réinitialiser tous les états locaux pour un nouveau manifold
     setDemandeur("");
     setRecepteur("");
-    setImputation("");
     setCode1("");
     setCode2("");
     setCode3("");
-    setFinCompteur(undefined);
-    setDPU("");
     setDateCommande("");
     setQuantite(undefined);
     setNomArticle("");
+
+    // Réinitialisation des articles: commence avec un article vide
+    setArticles([createEmptyArticle()]);
+
     setCheck1(false);
     setCheck2(false);
     setCheck3(false);
     setLocked1(false);
     setLocked2(false);
     setLocked3(false);
-    setCheckerNames({ 1: "", 2: "", 3: "" });
+    setCheckerNames({});
+
+    // Passer en mode édition si ce n'est pas déjà le cas
     setIsEditing(true);
     setSubmitted(false);
   };
 
-  // Initialisation ou reset
+  // --- CHARGEMENT ---
   useEffect(() => {
     if (selectedManifold) {
-      setNomArticle(selectedManifold.NomArticle ?? "");
       setDemandeur(selectedManifold.Demandeur ?? "");
       setRecepteur(selectedManifold.recepteur ?? "");
       setImputation(selectedManifold.Imputation ?? selectedManifold.imputation ?? "");
@@ -137,22 +193,77 @@ export default function ManifoldDetails({
          console.log("Date de commande formatée pour l'input:", dateValue);
       setDateCommande(dateValue);
       setCheck1(selectedManifold.check1 ?? false);
-      setLocked1(selectedManifold.locked1 ?? false);
       setCheck2(selectedManifold.check2 ?? false);
-      setLocked2(selectedManifold.locked2 ?? false);
       setCheck3(selectedManifold.check3 ?? false);
+      setLocked1(selectedManifold.locked1 ?? false);
+      setLocked2(selectedManifold.locked2 ?? false);
       setLocked3(selectedManifold.locked3 ?? false);
       setCheckerNames({
         1: selectedManifold.checker1_nom ?? "",
         2: selectedManifold.checker2_nom ?? "",
         3: selectedManifold.checker3_nom ?? "",
       });
+      prevIsEditingRef.current = isEditing;
     } else if (isEditing) {
-      handleNewManifold();
+      // Nouveau bon
+      handleNewBon();
     }
   }, [selectedManifold, isEditing]);
 
+  // --- SAVE ---
+  const handleSave = async () => {
+    const isUpdating = !!selectedManifold?.id;
+
+    const manifoldData = {
+      id: isUpdating ? selectedManifold.id : 0,
+      Demandeur,
+      recepteur,
+      code1,
+      code2,
+      code3,
+      dateCommande,
+      check1,
+      check2,
+      check3,
+      locked1,
+      locked2,
+      locked3,
+      checker1_nom: checkerNames[1] || null,
+      checker2_nom: checkerNames[2] || null,
+      checker3_nom: checkerNames[3] || null,
+      articles: articles.map(({ id, ...rest }) => rest),
+    };
+
+    const method = isUpdating ? "PUT" : "POST";
+
+    try {
+      const res = await fetch("/api/manifold", {
+        method: isUpdating ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manifoldData),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        alert(result.message || "Erreur lors de l’enregistrement");
+        return;
+      }
+
+      // 🎯 Utilisation de la prop onSaveAndReturn
+      onSaveAndReturn(result.bonDeSortie);
+
+      setSubmitted(true);
+      alert(`Manifold ${isUpdating ? "modifié" : "enregistré"} avec succès !`);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de connexion au serveur");
+    }
+  };
+
+  // --- CONFIRM CHECKER ---
   const handleConfirmChecker = async (checkboxIndex: number) => {
+    const manifoldId = selectedManifold?.id;
+
     if (!matricule || !password) {
       alert("Matricule et mot de passe requis");
       return;
@@ -199,7 +310,6 @@ export default function ManifoldDetails({
       const userName = data.user?.nom ?? data.name ?? "Utilisateur";
 
       // --- 3. Mise à jour de l'état local (Check et Lock) ---
-      // Ces mises à jour d'état local sont cruciales
       let newCheck1 = check1,
         newCheck2 = check2,
         newCheck3 = check3;
@@ -228,19 +338,46 @@ export default function ManifoldDetails({
       }
       setCheckerNames(newCheckerNames);
 
-      // --- 4. Mise à jour locale uniquement (pas d'enregistrement DB ici)
-      setCheck1(newCheck1);
-      setCheck2(newCheck2);
-      setCheck3(newCheck3);
-      setLocked1(newLocked1);
-      setLocked2(newLocked2);
-      setLocked3(newLocked3);
-      setCheckerNames(newCheckerNames);
+      // --- 4. Mise à jour DB (PUT) ---
+      const bonId = selectedManifold?.id;
+
+      const bonDataToUpdate = {
+        id: manifoldId,
+        Demandeur: Demandeur,
+        recepteur: recepteur,
+        code1: code1,
+        code2: code2,
+        code3: code3,
+        dateCommande: dateCommande,
+        articles: articles.map(({ id, ...rest }) => rest),
+        check1: newCheck1,
+        check2: newCheck2,
+        check3: newCheck3,
+        locked1: newLocked1,
+        locked2: newLocked2,
+        locked3: newLocked3,
+        checkerNames: newCheckerNames,
+      };
+
+      const putResponse = await fetch("/api/manifold", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bonDataToUpdate),
+      });
+
+      const putResult = await putResponse.json();
+
+      if (!putResponse.ok) {
+        alert(putResult.message || "Erreur lors de la mise à jour des checks.");
+        return;
+      }
+
+      onSaveAndReturn(putResult.bonDeSortie, false);
+
       setOpened(false);
       setActiveCheckbox(null);
       setMatricule("");
       setPassword("");
-      setIsEditing(true);
       alert(`Confirmé par ${userName}`);
     } catch (err) {
       console.error(err);
@@ -248,195 +385,91 @@ export default function ManifoldDetails({
     }
   };
 
+  // --- MODAL LOGIN ---
+  const handleCheckboxClick = (index: number) => {
+    if (!isEditing) return;
+    setActiveCheckbox(index);
+    setOpened(true);
+  };
+
   const handleCloseModal = () => {
     setOpened(false);
     setActiveCheckbox(null);
-    setModalFor(null);
     setMatricule("");
     setPassword("");
-  };
-
-  const handleLogin = async () => {
-    // 🔹 Ici tu peux faire ton fetch API réel
-    console.log("Login check for checkbox", modalFor, matricule, password);
-
-    if (modalFor === 1) {
-      setCheck1(true);
-      setLocked1(true);
-    } else if (modalFor === 2) {
-      setCheck2(true);
-      setLocked2(true);
-    } else if (modalFor === 3) {
-      setCheck3(true);
-      setLocked3(true);
-    }
-    setModalFor(null);
-    setMatricule("");
-    setPassword("");
-  };
-
-  // Nouvelle logique d'enregistrement harmonisée avec BonDeSortieDetails
-  const handleSave = async () => {
-    const isUpdating =
-      selectedManifold?.id !== undefined && selectedManifold.id !== 0;
-    const manifoldDataToSend = {
-      id: isUpdating ? selectedManifold?.id : undefined,
-      Demandeur: Demandeur || "",
-      recepteur: recepteur || "",
-      code1: code1 ?? 0,
-      code2: code2 ?? 0,
-      code3: code3 ?? 0,
-      NomArticle: NomArticle || "",
-      finCompteur: finCompteur || "",
-      DPU: DPU ?? 0,
-      dateCommande: dateCommande || "",
-      quantite: quantite ?? 0,
-      imputation: imputation || "",
-      check1,
-      check2,
-      check3,
-      locked1,
-      locked2,
-      locked3,
-      checkerNames: checkerNames,
-      checker1_nom: checkerNames[1] || null,
-      checker2_nom: checkerNames[2] || null,
-      checker3_nom: checkerNames[3] || null,
-    };
-    const method = isUpdating ? "PUT" : "POST";
-    try {
-      const res = await fetch("/api/manifold", {
-        method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(manifoldDataToSend),
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        alert(result.message || "Erreur lors de l’enregistrement");
-        return;
-      }
-      onSaveAndReturn(result.manifold);
-      setSubmitted(true);
-      alert(`Manifold ${isUpdating ? "modifié" : "enregistré"} avec succès !`);
-    } catch (err) {
-      console.error(err);
-      alert("Erreur de connexion au serveur");
-    }
   };
 
   return (
-    <ScrollArea h={800} type="always">
+    <ScrollArea h={900} type="scroll">
       <Card shadow="xl" radius="lg" mb={8} m={10}>
         <div ref={printRef} className="print-area">
           <Title order={3}>Manifold</Title>
+
           {submitted && (
-            <div style={{ color: "green", marginBottom: 10 }}>
-              Manifold enregistré !
+            <div style={{ color: "green", marginBottom: "1rem" }}>
+              Manifold enregistrée
             </div>
           )}
 
+          <Title order={4} mt="sm">
+            Entête
+          </Title>
           <Group grow>
             <TextInput
-              placeholder="Nom de votre Atelier"
               label="De"
               value={Demandeur}
-              onChange={(d) => setDemandeur(d.currentTarget.value)}
+              onChange={(e) => setDemandeur(e.currentTarget.value)}
               disabled={!isEditing}
-              mt="sm"
             />
             <TextInput
-              placeholder="Inserer le code ici si necessaire"
-              label="Code 1"
+              label="Code 1 (Demandeur)"
               value={code1}
-              onChange={(d) => setCode1(d.currentTarget.value)}
+              onChange={(e) => setCode1(e.currentTarget.value)}
               disabled={!isEditing}
-              mt="sm"
             />
           </Group>
 
-          <Group grow>
+          <Group grow mt="sm">
             <TextInput
-              placeholder="Nom du recepteur"
               label="À"
               value={recepteur}
-              onChange={(d) => setRecepteur(d.currentTarget.value)}
+              onChange={(e) => setRecepteur(e.currentTarget.value)}
               disabled={!isEditing}
-              mt="sm"
             />
             <TextInput
-              placeholder="Inserer le code ici si necessaire"
-              label="Code 2"
+              label="Code 2 (Recepteur)"
               value={code2}
-              onChange={(d) => setCode2(d.currentTarget.value)}
+              onChange={(e) => setCode2(e.currentTarget.value)}
               disabled={!isEditing}
-              mt="sm"
             />
           </Group>
 
-          <Group grow>
+          <Group grow mt="sm">
             <TextInput
-              label="Imputation"
-              value={imputation}
-              onChange={(d) => setImputation(d.currentTarget.value)}
+              label="Date commande"
+              type="date"
+              value={dateCommande}
+              onChange={(e) => setDateCommande(e.currentTarget.value)}
               disabled={!isEditing}
-              mt="sm"
             />
             <TextInput
-              placeholder="Inserer le code ici si necessaire"
-              label="Code 3"
+              label="Code Machine"
               value={code3}
-              onChange={(d) => setCode3(d.currentTarget.value)}
+              onChange={(e) => setCode3(e.currentTarget.value)}
               disabled={!isEditing}
-              mt="sm"
             />
           </Group>
 
-          <NumberInput
-            label="Fin compteur"
-            value={finCompteur}
-            onChange={(value: string | number) => {
-              const numberValue =
-                typeof value === "string" ? parseFloat(value) : value;
-              setFinCompteur(numberValue);
-            }}
-            mt="sm"
-            disabled={!isEditing}
-          />
-          <NumberInput
-            label="Quantité"
-            value={quantite}
-            onChange={(value: string | number) => {
-              const numberValue =
-                typeof value === "string" ? parseFloat(value) : value;
-              setQuantite(numberValue);
-            }}
-            mt="sm"
-            disabled={!isEditing}
-          />
-
-          <TextInput
-            label="Nom Article"
-            value={NomArticle}
-            onChange={(d) => setNomArticle(d.currentTarget.value)}
-            disabled={!isEditing}
-            mt="sm"
-          />
-          <TextInput
-            placeholder="... mois ... année"
-            label="DPU"
-            value={DPU}
-            onChange={(d) => setDPU(d.currentTarget.value)}
-            disabled={!isEditing}
-            mt="sm"
-          />
-          <TextInput
-            label="Date de commande"
-            type="date"
-            value={dateCommande}
-            onChange={(d) => setDateCommande(d.currentTarget.value)}
-            disabled={!isEditing}
-            mt="sm"
-          />
+          <Divider my="md" label="Articles" labelPosition="center" />
+          <Group justify="space-between" mb="sm">
+            <Button
+              onClick={handleAddArticle}
+              disabled={!isEditing}
+              color="#c94b06"
+            >
+              + Ajouter un article
+            </Button>
+          </Group>
 
           <Checkbox
             label={
@@ -494,16 +527,104 @@ export default function ManifoldDetails({
                     🔒
                   </Text>
                 )}
-              </>
-            }
-            checked={check3}
-            onChange={() => handleCheckboxClick(3)}
-            disabled={!isEditing || check3 || locked3}
-            mt="sm"
-      
-          />
+              </Group>
+              <TextInput
+                placeholder="Nom article"
+                label="Nom article"
+                value={art.NomArticle}
+                onChange={(d) =>
+                  handleArticleChange(
+                    art.id,
+                    "NomArticle",
+                    d.currentTarget.value
+                  )
+                }
+                mt="sm"
+                disabled={!isEditing}
+              />
+              <Group grow mt="sm">
+                <NumberInput
+                  label="Quantité"
+                  value={art.quantite}
+                  onChange={(value: string | number) => {
+                    const numberValue =
+                      typeof value === "string" ? parseFloat(value) : value;
+                    handleArticleChange(art.id, "quantite", numberValue);
+                  }}
+                  mt="sm"
+                  disabled={!isEditing}
+                />
+                <TextInput
+                  label="Unité"
+                  value={art.unite}
+                  onChange={(d) =>
+                    handleArticleChange(art.id, "unite", d.currentTarget.value)
+                  }
+                  mt="sm"
+                  disabled={!isEditing}
+                />
+              </Group>
+              <TextInput
+                placeholder="DPU"
+                label="DPU"
+                value={art.DPU}
+                onChange={(d) =>
+                  handleArticleChange(art.id, "DPU", d.currentTarget.value)
+                }
+                mt="sm"
+                disabled={!isEditing}
+              />
+              <NumberInput
+                label="Fin Compteur"
+                value={art.finCompteur}
+                onChange={(value: string | number) => {
+                  const numberValue =
+                    typeof value === "string" ? parseFloat(value) : value;
+                  handleArticleChange(art.id, "finCompteur", numberValue);
+                }}
+                mt="sm"
+                disabled={!isEditing}
+              />
+            </Card>
+          ))}
+
+          <Divider my="md" label="Confirmations" labelPosition="center" />
+          {[1, 2, 3].map((idx) => (
+            <Checkbox
+              key={idx}
+              label={
+                <>
+                  {idx === 1
+                    ? "Magasinier"
+                    : idx === 2
+                    ? "Responsable Achat"
+                    : "Employé"}{" "}
+                  {checkerNames[idx] && (
+                    <Text span ml={5}>
+                      {checkerNames[idx]}
+                    </Text>
+                  )}
+                  {(idx === 1 && locked1) ||
+                  (idx === 2 && locked2) ||
+                  (idx === 3 && locked3) ? (
+                    <Text span ml={6}>
+                      🔒
+                    </Text>
+                  ) : null}
+                </>
+              }
+              checked={idx === 1 ? check1 : idx === 2 ? check2 : check3}
+              onChange={() => handleCheckboxClick(idx)}
+              disabled={
+                !isEditing ||
+                (idx === 1 ? locked1 : idx === 2 ? locked2 : locked3)
+              }
+              mt="sm"
+            />
+          ))}
         </div>
 
+        {/* MODAL LOGIN */}
         <Modal
           opened={opened}
           onClose={handleCloseModal}
@@ -534,9 +655,9 @@ export default function ManifoldDetails({
         </Modal>
 
         {isEditing && (
-          <Group>
-            <Button color="#c94b06" onClick={handleSave} mt="sm">
-              Enregistrer
+          <Group mt="md">
+            <Button color="#c94b06" onClick={handleSave}>
+              💾 Enregistrer
             </Button>
             <Button color="#63687c" onClick={handlePrint} mt={"sm"} variant="outline">
               🖨️ Imprimer

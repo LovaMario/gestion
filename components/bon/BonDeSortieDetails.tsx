@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   Checkbox,
+  Divider,
   Group,
   Input,
   Modal,
@@ -21,11 +22,33 @@ import { IMaskInput } from "react-imask";
 import { useForm } from "@mantine/form";
 import { useToggle } from "@mantine/hooks";
 import { useReactToPrint } from "react-to-print";
+import { IconTrash } from "@tabler/icons-react";
 
-// NOTE: Les props BonsDeSortie et setBonsDeSortie ne sont plus nécessaires
-// dans BonDeSortieDetails car la communication vers le parent se fait
-// exclusivement par onSaveAndReturn. Je les ai laissés pour la compatibilité
-// de type si elles sont utilisées ailleurs, mais la fonction les ignore.
+// --- NOUVEAU TYPE POUR UN ARTICLE ---
+export type Article = {
+  id: number; // ID temporaire pour la gestion React (key, suppression)
+  codeArticle: string;
+  libelleArticle: string;
+  quantite: number | undefined;
+  unite: string;
+  imputation: string;
+  imputationCode: string | null;
+  commande: string;
+};
+
+// Fonction utilitaire pour créer un article vide
+let nextTempId = 1;
+const createEmptyArticle = (): Article => ({
+  id: nextTempId++,
+  codeArticle: "",
+  libelleArticle: "",
+  quantite: undefined,
+  unite: "",
+  imputation: "",
+  imputationCode: null,
+  commande: "",
+});
+
 type Props = {
   BonsDeSortie: BonDeSortie[];
   setBonsDeSortie: React.Dispatch<React.SetStateAction<BonDeSortie[]>>;
@@ -41,9 +64,6 @@ type Props = {
   ) => void;
 };
 
-// Fonction utilitaire pour générer un nouveau numéro (à adapter si nécessaire)
-// const generateNewNumero = () => new Date().getTime().toString(); // Non utilisée
-
 export default function BonDeSortieDetails({
   BonsDeSortie,
   setBonsDeSortie,
@@ -58,7 +78,8 @@ export default function BonDeSortieDetails({
   const [magasinValue, setMagasinValue] = useState<string | null>(null);
   const [magasinInput, setMagasinInput] = useState("");
   const [type, toggle] = useToggle(["Se connecter", "Créer un compte"]);
-  // --- IMPRESSION ---
+
+  // --- ÉTATS IMPRESSION ---
   const printRef = useRef<HTMLDivElement>(null);
   const [piece, setPiece] = useState<number | undefined>(undefined);
   const handlePrint = useReactToPrint({
@@ -71,7 +92,6 @@ export default function BonDeSortieDetails({
   const form = useForm({
     initialValues: { matricule: "", name: "", password: "" },
     validate: {
-      // ... validation logique ...
       matricule: (val) => (val.length > 0 ? null : "Matricule obligatoire"),
       password: (val) =>
         val.length < 6
@@ -84,8 +104,7 @@ export default function BonDeSortieDetails({
     },
   });
 
-  // Suppression de la fonction handleSaveAndReturn locale ici ❌
-
+  // --- OPTIONS MAGASIN ---
   const handleMagasinKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>
   ) => {
@@ -171,27 +190,47 @@ export default function BonDeSortieDetails({
     }
   };
 
-  // --- IMPUTATION CODE ---
+  // --- IMPUTATION CODE (Options communes à tous les articles) ---
   const [ImputationCodeOptions, setImputationCodeOptions] = useState([
     "Secteur",
     "Commande",
     "Code machine",
   ]);
-  const [ImputationCodeValue, setImputationCodeValue] = useState<string | null>(
-    null
-  );
+  // L'état de la valeur et de l'input est maintenu ici pour ajouter des options
   const [ImputationCodeInput, setImputationCodeInput] = useState("");
-
   const handleImputationCodeKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>
   ) => {
     if (event.key === "Enter" && ImputationCodeInput.trim() !== "") {
       if (!ImputationCodeOptions.includes(ImputationCodeInput)) {
         setImputationCodeOptions((prev) => [...prev, ImputationCodeInput]);
-        setImputationCodeValue(ImputationCodeInput);
       }
     }
   };
+
+  // --- NOUVEAU: GESTION DES ARTICLES MULTIPLES ---
+  const [articles, setArticles] = useState<Article[]>([]);
+
+  const handleAddArticle = () => {
+    setArticles((prev) => [...prev, createEmptyArticle()]);
+  };
+
+  const handleRemoveArticle = (idToRemove: number) => {
+    setArticles((prev) => prev.filter((article) => article.id !== idToRemove));
+  };
+
+  const handleArticleChange = (
+    idToUpdate: number,
+    field: keyof Article,
+    value: any
+  ) => {
+    setArticles((prev) =>
+      prev.map((article) =>
+        article.id === idToUpdate ? { ...article, [field]: value } : article
+      )
+    );
+  };
+  // -----------------------------------------------------------
 
   // --- ÉTATS CHECKBOX ---
   const [check1, setCheck1] = useState(false);
@@ -209,24 +248,13 @@ export default function BonDeSortieDetails({
   const [activeCheckbox, setActiveCheckbox] = useState<number | null>(null);
   const [matricule, setMatricule] = useState("");
   const [password, setPassword] = useState("");
-  // Impression (unique)
   const [manuelle, setManuelle] = useState<number | undefined>(undefined);
   const [dateSortie, setDateSortie] = useState("");
-  const [codeArticle, setCodeArticle] = useState("");
-  const [libelleArticle, setLibelleArticle] = useState("");
-  const [quantite, setQuantite] = useState<number | undefined>(undefined);
-  const [imputation, setImputation] = useState("");
-  const [imputationCode, setImputationCode] = useState("");
-  const [commande, setCommande] = useState("");
-  const [unite, setUnite] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  // pour gérer reset seulement quand on entre en edition
   const prevIsEditingRef = useRef<boolean>(isEditing);
 
   // --- GESTION MODAL ---
-  const [modalFor, setModalFor] = useState<number | null>(null);
-
   const handleCheckboxClick = (index: number) => {
     if (!isEditing) return;
     setActiveCheckbox(index);
@@ -236,7 +264,6 @@ export default function BonDeSortieDetails({
   const handleCloseModal = () => {
     setOpened(false);
     setActiveCheckbox(null);
-    setModalFor(null);
     setMatricule("");
     setPassword("");
   };
@@ -252,13 +279,8 @@ export default function BonDeSortieDetails({
     setDepartementValue(null);
     setAtelierValue(null);
     setSecteurValue(null);
-    setCodeArticle("");
-    setLibelleArticle("");
-    setQuantite(undefined);
-    setImputation("");
-    setImputationCode("");
-    setCommande("");
-    setUnite("");
+    // Réinitialisation des articles: commence avec un article vide
+    setArticles([createEmptyArticle()]);
 
     setCheck1(false);
     setCheck2(false);
@@ -281,7 +303,12 @@ export default function BonDeSortieDetails({
       setManuelle(selectedBonDeSortie.manuelle ?? undefined);
       setMagasinValue(selectedBonDeSortie.magasin ?? "");
       setDepotValue(selectedBonDeSortie.depot ?? "");
-      setDateSortie(selectedBonDeSortie.dateSortie ?? "");
+
+      const dateValue = selectedBonDeSortie.dateSortie
+        ? new Date(selectedBonDeSortie.dateSortie).toISOString().split("T")[0]
+        : "";
+      setDateSortie(dateValue);
+
       setDepartementValue(selectedBonDeSortie.departement ?? "");
       setAtelierValue(selectedBonDeSortie.atelier ?? "");
       setSecteurValue(selectedBonDeSortie.secteur ?? "");
@@ -306,7 +333,7 @@ export default function BonDeSortieDetails({
       setLocked2(selectedBonDeSortie.locked2 ?? false);
       setLocked3(selectedBonDeSortie.locked3 ?? false);
 
-      // Transformer les colonnes checkerX_nom en objet checkerNames
+      // Restaurer les noms des validateurs
       setCheckerNames({
         1: selectedBonDeSortie.checker1_nom ?? "",
         2: selectedBonDeSortie.checker2_nom ?? "",
@@ -315,8 +342,8 @@ export default function BonDeSortieDetails({
 
       prevIsEditingRef.current = isEditing;
     } else if (isEditing) {
-      // Nouveau bon : reset complet du formulaire
-      handleNewBon(); // Utilise la fonction de reset
+      // Nouveau bon
+      handleNewBon();
     }
   }, [selectedBonDeSortie, isEditing]);
 
@@ -336,13 +363,10 @@ export default function BonDeSortieDetails({
       departement: departementValue || "",
       atelier: atelierValue || "",
       secteur: secteurValue || "",
-      codeArticle: codeArticle || "",
-      libelleArticle: libelleArticle || "",
-      quantite: quantite ?? 0,
-      imputation: imputation || "",
-      imputationCode: ImputationCodeValue || "",
-      commande: commande || "",
-      unite: unite || "",
+
+      // Envoi du tableau d'articles. L'API va gérer la suppression de l'ID temporaire
+      articles: articles.map(({ id, ...rest }) => rest), // Retirer l'ID temporaire côté client
+
       check1,
       check2,
       check3,
@@ -382,7 +406,6 @@ export default function BonDeSortieDetails({
     }
   };
 
-  // --- GESTION CONFIRMATION (handleConfirmChecker) ---
   // --- GESTION CONFIRMATION (handleConfirmChecker) ---
   const handleConfirmChecker = async (checkboxIndex: number) => {
     if (!matricule || !password) {
@@ -431,7 +454,6 @@ export default function BonDeSortieDetails({
       const userName = data.user?.nom ?? data.name ?? "Utilisateur";
 
       // --- 3. Mise à jour de l'état local (Check et Lock) ---
-      // Ces mises à jour d'état local sont cruciales
       let newCheck1 = check1,
         newCheck2 = check2,
         newCheck3 = check3;
@@ -463,7 +485,7 @@ export default function BonDeSortieDetails({
       // --- 4. Mise à jour DB (PUT) ---
       const bonId = selectedBonDeSortie?.id;
 
-      // 💡 CORRECTION : Création d'un objet complet à envoyer
+      // Création d'un objet complet à envoyer (avec le tableau d'articles)
       const bonDataToUpdate = {
         id: bonId,
         piece: piece ?? 0,
@@ -474,30 +496,23 @@ export default function BonDeSortieDetails({
         departement: departementValue || "",
         atelier: atelierValue || "",
         secteur: secteurValue || "",
-        codeArticle: codeArticle || "",
-        libelleArticle: libelleArticle || "",
-        quantite: quantite ?? 0,
-        imputation: imputation || "",
-        imputationCode: ImputationCodeValue || "",
-        commande: commande || "",
-        unite: unite || "",
+
+        articles: articles.map(({ id, ...rest }) => rest), // Retirer l'ID temporaire
+
         check1: newCheck1,
         check2: newCheck2,
         check3: newCheck3,
         locked1: newLocked1,
         locked2: newLocked2,
         locked3: newLocked3,
-        checker1_nom: newCheckerNames[1] || null,
-        checker2_nom: newCheckerNames[2] || null,
-        checker3_nom: newCheckerNames[3] || null,
 
-        checkerNames: newCheckerNames,
+        checkerNames: newCheckerNames, // L'API gérera la conversion en checkerX_nom
       };
 
       const putResponse = await fetch("/api/bonDeSortie", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bonDataToUpdate), // Utilisez l'objet complet
+        body: JSON.stringify(bonDataToUpdate),
       });
 
       const putResult = await putResponse.json();
@@ -522,7 +537,7 @@ export default function BonDeSortieDetails({
 
   // --- RENDU ---
   return (
-    <ScrollArea h={800} type="scroll">
+    <ScrollArea h={1000} type="scroll">
       <Card shadow="xl" radius={"lg"} mb={8} m={10}>
         {/* 👇 Contenu à imprimer */}
         <div ref={printRef} className="print-area">
@@ -642,88 +657,213 @@ export default function BonDeSortieDetails({
               placeholder="Sélectionner ou ajouter un atelier"
             />
           </Group>
+          <Divider my="md" label="Articles" labelPosition="center" />
 
           <Title order={4} mt="md">
-            Détails
+            Détails des Articles
           </Title>
 
-          <Group grow gap={20}>
-            <Group gap="md" mb={-10}>
-              <Text w={120} fw={500} mb={-16}>
-                Code article
-              </Text>
-              <Input
-                component={IMaskInput}
-                mask="M****************************************************************************"
-                style={{ width: 400 }}
-                value={codeArticle}
-                onChange={(e: any) => setCodeArticle(e.target.value)}
+          {articles.map((article, index) => (
+            <Card
+              key={article.id}
+              shadow="sm"
+              padding="lg"
+              radius="md"
+              withBorder
+              mb="lg"
+              style={{
+                borderLeft: "5px solid #c94b06",
+                backgroundColor: index % 2 === 0 ? "#f9f9f9" : "white",
+              }}
+            >
+              <Group justify="space-between">
+                <Title order={5}>Article n°{index + 1}</Title>
+                {isEditing && articles.length > 1 && (
+                  <Button
+                    variant="light"
+                    color="red"
+                    onClick={() => handleRemoveArticle(article.id)}
+                    leftSection={<IconTrash size={16} />}
+                  >
+                    Supprimer
+                  </Button>
+                )}
+              </Group>
+
+              <Group grow gap={20} mt="md">
+                <Group gap="md" mb={-10}>
+                  <Text w={120} fw={500} mb={-16}>
+                    Code article
+                  </Text>
+                  <Input
+                    component={IMaskInput}
+                    mask="M****************************************************************************"
+                    style={{ width: 400 }}
+                    value={article.codeArticle}
+                    onChange={(e: any) =>
+                      handleArticleChange(
+                        article.id,
+                        "codeArticle",
+                        e.target.value
+                      )
+                    }
+                    disabled={!isEditing}
+                  />
+                </Group>
+
+                <TextInput
+                  placeholder="Libellé de l'article"
+                  label="Libellé article"
+                  value={article.libelleArticle}
+                  onChange={(d) =>
+                    handleArticleChange(
+                      article.id,
+                      "libelleArticle",
+                      d.currentTarget.value
+                    )
+                  }
+                  mt="sm"
+                  disabled={!isEditing}
+                />
+              </Group>
+
+              <Group>
+                <NumberInput
+                  label="Quantité"
+                  value={article.quantite}
+                  onChange={(value: string | number) => {
+                    const numberValue =
+                      typeof value === "string" ? parseFloat(value) : value;
+                    handleArticleChange(article.id, "quantite", numberValue);
+                  }}
+                  mt="sm"
+                  disabled={!isEditing}
+                />
+
+                <TextInput
+                  label="Unité"
+                  value={article.unite}
+                  onChange={(d) =>
+                    handleArticleChange(
+                      article.id,
+                      "unite",
+                      d.currentTarget.value
+                    )
+                  }
+                  mt="sm"
+                  disabled={!isEditing}
+                />
+              </Group>
+
+              <Group grow>
+                <Select
+                  label="Imputée à:"
+                  size="sm"
+                  mt="sm"
+                  searchable
+                  data={ImputationCodeOptions}
+                  value={article.imputationCode}
+                  onChange={(value) =>
+                    handleArticleChange(article.id, "imputationCode", value)
+                  }
+                  onSearchChange={setImputationCodeInput}
+                  onKeyDown={handleImputationCodeKeyDown}
+                  disabled={!isEditing}
+                  placeholder="Sélectionner ou ajouter une imputation"
+                />
+
+                <TextInput
+                  label="Imputation"
+                  value={article.imputation}
+                  onChange={(I) =>
+                    handleArticleChange(
+                      article.id,
+                      "imputation",
+                      I.currentTarget.value
+                    )
+                  }
+                  mt="sm"
+                  disabled={!isEditing}
+                />
+              </Group>
+
+              <TextInput
+                label="Commande"
+                value={article.commande}
+                onChange={(c) =>
+                  handleArticleChange(
+                    article.id,
+                    "commande",
+                    c.currentTarget.value
+                  )
+                }
+                mt="sm"
                 disabled={!isEditing}
               />
+            </Card>
+          ))}
+
+          {/* Bouton pour ajouter un article */}
+          {isEditing && (
+            <Group justify="center" mt="md" mb="xl">
+              <Button
+                variant="outline"
+                color="#c94b06"
+                onClick={handleAddArticle}
+                leftSection={<span>+</span>}
+                disabled={!isEditing}
+              >
+                Ajouter un autre article
+              </Button>
             </Group>
+          )}
+          {/* Fin des détails des articles */}
 
-            <TextInput
-              placeholder="Libellé de l'article"
-              label="Libellé article"
-              value={libelleArticle}
-              onChange={(d) => setLibelleArticle(d.currentTarget.value)}
-              mt="sm"
-              disabled={!isEditing}
-            />
-          </Group>
-
+          <Divider my="md" label="Confirmations" labelPosition="center" />
           <Group>
-            <NumberInput
-              label="Quantité"
-              value={quantite}
-              onChange={(value: string | number) => {
-                const numberValue =
-                  typeof value === "string" ? parseFloat(value) : value;
-                setQuantite(numberValue);
-              }}
+            <Checkbox
+              label={
+                <>
+                  Magasinier{" "}
+                  {checkerNames[1] && (
+                    <Text span ml={5}>
+                      {checkerNames[1]}
+                    </Text>
+                  )}{" "}
+                  {(check1 || locked1) && (
+                    <Text span ml={6}>
+                      🔒
+                    </Text>
+                  )}
+                </>
+              }
+              checked={check1}
+              onChange={() => handleCheckboxClick(1)}
+              disabled={!isEditing || check1 || locked1}
               mt="sm"
-              disabled={!isEditing}
-            />
-
-            <TextInput
-              label="Unité"
-              value={unite}
-              onChange={(d) => setUnite(d.currentTarget.value)}
-              mt="sm"
-              disabled={!isEditing}
-            />
-          </Group>
-
-          <Group grow>
-            <Select
-              label="Imputée à:"
-              size="sm"
-              mt="sm"
-              searchable
-              data={ImputationCodeOptions}
-              value={ImputationCodeValue}
-              onChange={setImputationCodeValue}
-              onSearchChange={setImputationCodeInput}
-              onKeyDown={handleImputationCodeKeyDown}
-              disabled={!isEditing}
-              placeholder="Sélectionner ou ajouter une imputation"
-            />
-
-            <TextInput
-              label="Imputation"
-              value={imputation}
-              onChange={(I) => setImputation(I.currentTarget.value)}
-              mt="sm"
-              disabled={!isEditing}
             />
           </Group>
 
-          <TextInput
-            label="Commande"
-            value={commande}
-            onChange={(c) => setCommande(c.currentTarget.value)}
+          <Checkbox
+            label={
+              <>
+                Responsable achat{" "}
+                {checkerNames[2] && (
+                  <Text span ml={5}>
+                    {checkerNames[2]}
+                  </Text>
+                )}
+                {(check2 || locked2) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check2}
+            onChange={() => handleCheckboxClick(2)}
+            disabled={!isEditing || check2 || locked2}
             mt="sm"
-            disabled={!isEditing}
           />
 
           {/* 🎯 CHECKBOXES (ATTRIBUT DISABLED MIS À JOUR) */}
