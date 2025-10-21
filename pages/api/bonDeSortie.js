@@ -1,29 +1,34 @@
 import { db } from "../../lib/db";
 
-// Fonction utilitaire pour insérer un tableau d'articles
+// Fonction utilitaire pour insérer un tableau d'articles en lots (batch) afin
+// d'éviter des requêtes INSERT trop volumineuses qui peuvent échouer.
 const insertArticles = async (bonId, articles) => {
   if (!articles || articles.length === 0) return;
 
-  const values = articles.flatMap((art) => [
-    bonId,
-    art.codeArticle || "",
-    art.libelleArticle || "",
-    art.quantite ?? 0,
-    art.unite || "",
-    art.imputation || "",
-    art.imputationCode || null,
-    art.commande || "",
-  ]);
+  const chunkSize = 50; // insérer 50 articles par requête (ajustable)
 
-  const placeholders = articles
-    .map(() => "(?, ?, ?, ?, ?, ?, ?, ?)")
-    .join(", ");
+  for (let i = 0; i < articles.length; i += chunkSize) {
+    const chunk = articles.slice(i, i + chunkSize);
 
-  await db.query(
-    `INSERT INTO articles_sortie (bon_de_sortie_id, codeArticle, libelleArticle, quantite, unite, imputation, imputationCode, commande) 
-     VALUES ${placeholders}`,
-    values
-  );
+    const values = chunk.flatMap((art) => [
+      bonId,
+      art.codeArticle || "",
+      art.libelleArticle || "",
+      art.quantite ?? 0,
+      art.unite || "",
+      art.imputation || "",
+      art.imputationCode || null,
+      art.commande || "",
+    ]);
+
+    const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+
+    await db.query(
+      `INSERT INTO articles_sortie (bon_de_sortie_id, codeArticle, libelleArticle, quantite, unite, imputation, imputationCode, commande) 
+       VALUES ${placeholders}`,
+      values
+    );
+  }
 };
 
 export default async function handler(req, res) {
