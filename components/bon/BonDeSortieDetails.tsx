@@ -89,7 +89,6 @@ export default function BonDeSortieDetails({
     }`,
   } as any);
 
-  // --- FORMULAIRE D'AUTHENTIFICATION (pour les checks) ---
   const form = useForm({
     initialValues: { matricule: "", name: "", password: "" },
     validate: {
@@ -313,18 +312,20 @@ export default function BonDeSortieDetails({
       setDepartementValue(selectedBonDeSortie.departement ?? "");
       setAtelierValue(selectedBonDeSortie.atelier ?? "");
       setSecteurValue(selectedBonDeSortie.secteur ?? "");
+      setCodeArticle(selectedBonDeSortie.codeArticle ?? "");
+      setLibelleArticle(selectedBonDeSortie.libelleArticle ?? "");
+      setQuantite(selectedBonDeSortie.quantite ?? undefined);
+      setImputation(selectedBonDeSortie.imputation ?? "");
+      setImputationCode(selectedBonDeSortie.imputationCode ?? "");
+      setCommande(selectedBonDeSortie.commande ?? "");
+      setUnite(selectedBonDeSortie.unite ?? "");
+      const dateValue = selectedBonDeSortie.dateSortie
+        ? new Date(selectedBonDeSortie.dateSortie).toISOString().split("T")[0]
+        : "";
+         console.log("Date de sortie formatée pour l'input:", dateValue);
+      setDateSortie(dateValue);
 
-      // Restaurer les articles
-      const loadedArticles: Article[] =
-        selectedBonDeSortie.articles && selectedBonDeSortie.articles.length > 0
-          ? selectedBonDeSortie.articles.map((art) => ({
-              ...art,
-              id: art.id || createEmptyArticle().id,
-            }))
-          : [createEmptyArticle()];
-      setArticles(loadedArticles);
-
-      // Restaurer les états de validation
+      // Restaurer l'état des checkboxes et verrouillages
       setCheck1(selectedBonDeSortie.check1 ?? false);
       setCheck2(selectedBonDeSortie.check2 ?? false);
       setCheck3(selectedBonDeSortie.check3 ?? false);
@@ -865,6 +866,53 @@ export default function BonDeSortieDetails({
             mt="sm"
           />
 
+          {/* 🎯 CHECKBOXES (ATTRIBUT DISABLED MIS À JOUR) */}
+          <Group>
+            <Checkbox
+              label={
+                <>
+                  Magasinier{" "}
+                  {checkerNames[1] && (
+                    <Text span ml={5}>
+                      {checkerNames[1]}
+                    </Text>
+                  )}{" "}
+                  {(check1 || locked1) && (
+                    <Text span ml={6}>
+                      🔒
+                    </Text>
+                  )}
+                </>
+              }
+              checked={check1}
+              onChange={() => handleCheckboxClick(1)}
+              disabled={!isEditing || check1 || locked1}
+              mt="sm"
+            />
+          </Group>
+
+          <Checkbox
+            label={
+              <>
+                Responsable achat{" "}
+                {checkerNames[2] && (
+                  <Text span ml={5}>
+                    {checkerNames[2]}
+                  </Text>
+                )}
+                {(check2 || locked2) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check2}
+            onChange={() => handleCheckboxClick(2)}
+            disabled={!isEditing || check2 || locked2}
+            mt="sm"
+          />
+
           <Checkbox
             label={
               <>
@@ -886,6 +934,7 @@ export default function BonDeSortieDetails({
             disabled={!isEditing || check3 || locked3}
             mt="sm"
           />
+          {/* 🎯 FIN CHECKBOXES */}
         </div>
 
         <Modal
@@ -922,7 +971,12 @@ export default function BonDeSortieDetails({
             <Button color="#c94b06" onClick={handleSave} mt="sm">
               Enregistrer
             </Button>
-            <Button color="#63687c" onClick={handlePrint} mt="sm">
+            <Button
+              color="#63687c"
+              onClick={handlePrint}
+              mt="sm"
+              variant="outline"
+            >
               🖨️ Imprimer
             </Button>
           </Group>

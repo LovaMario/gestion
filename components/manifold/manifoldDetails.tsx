@@ -64,13 +64,19 @@ export default function ManifoldDetails({
   setIsEditing,
   onSaveAndReturn,
 }: Props) {
-  const [DemandeurValue, setDemandeurValue] = useState<string | null>(null);
-  const [RecepteurValue, setRecepteurValue] = useState<string | null>(null);
-  const [Code1Value, setCode1Value] = useState<string | null>(null);
-  const [Code2Value, setCode2Value] = useState<string | null>(null);
-  const [Code3Value, setCode3Value] = useState<string | null>(null);
-  const [dateCommandeValue, setDateCommandevalue] = useState<string | null>(
-    null
+  // Impression
+  const printRef = useRef<HTMLDivElement>(null);
+  // ...existing code...
+  // ✅ Checkboxes
+  const [check1, setCheck1] = useState(false);
+  const [locked1, setLocked1] = useState(false);
+  const [check2, setCheck2] = useState(false);
+
+  const [locked2, setLocked2] = useState(false);
+  const [check3, setCheck3] = useState(false);
+  const [locked3, setLocked3] = useState(false);
+  const [checkerNames, setCheckerNames] = useState<{ [key: number]: string }>(
+    {}
   );
 
   // --- REF POUR IMPRESSION ---
@@ -173,26 +179,19 @@ export default function ManifoldDetails({
     if (selectedManifold) {
       setDemandeur(selectedManifold.Demandeur ?? "");
       setRecepteur(selectedManifold.recepteur ?? "");
+      setImputation(selectedManifold.Imputation ?? selectedManifold.imputation ?? "");
+      setQuantite(selectedManifold.quantite ?? undefined);
       setCode1(selectedManifold.code1 ?? "");
       setCode2(selectedManifold.code2 ?? "");
       setCode3(selectedManifold.code3 ?? "");
-      setDateCommande(selectedManifold.dateCommande ?? "");
+      setFinCompteur(selectedManifold.finCompteur ?? undefined);
+      setDPU(selectedManifold.DPU ?? "");
 
       const dateValue = selectedManifold.dateCommande
         ? new Date(selectedManifold.dateCommande).toISOString().split("T")[0]
         : "";
+         console.log("Date de commande formatée pour l'input:", dateValue);
       setDateCommande(dateValue);
-
-      const loadedArticles: Article[] =
-        selectedManifold.articles && selectedManifold.articles.length > 0
-          ? selectedManifold.articles.map((art) => ({
-              ...art,
-              id: art.id || createEmptyArticle().id,
-              unite: art.unite || createEmptyArticle().unite,
-            }))
-          : [createEmptyArticle()];
-      setArticles(loadedArticles);
-
       setCheck1(selectedManifold.check1 ?? false);
       setCheck2(selectedManifold.check2 ?? false);
       setCheck3(selectedManifold.check3 ?? false);
@@ -472,30 +471,61 @@ export default function ManifoldDetails({
             </Button>
           </Group>
 
-          {articles.map((art, i) => (
-            <Card
-              key={art.id}
-              shadow="sm"
-              padding="lg"
-              radius="md"
-              withBorder
-              mb="lg"
-              style={{
-                borderLeft: "5px solid #c94b06",
-                backgroundColor: i % 2 === 0 ? "#f9f9f9" : "white",
-              }}
-            >
-              <Group justify="space-between">
-                <Title order={5}>Article n°{i + 1}</Title>
-                {isEditing && articles.length > 1 && (
-                  <Button
-                    variant="light"
-                    color="red"
-                    onClick={() => handleRemoveArticle(art.id)}
-                    leftSection={<IconTrash size={16} />}
-                  >
-                    Supprimer
-                  </Button>
+          <Checkbox
+            label={
+              <>
+                Magasinier{" "}
+                {checkerNames[1] && (
+                  <Text span ml={5}>
+                    {checkerNames[1]}
+                  </Text>
+                )}{" "}
+                {(check1 || locked1) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check1}
+            onChange={() => handleCheckboxClick(1)}
+            disabled={!isEditing || check1 || locked1}
+            mt="sm"
+          />
+          <Checkbox
+            label={
+              <>
+                Responsable achat{" "}
+                {checkerNames[2] && (
+                  <Text span ml={5}>
+                    {checkerNames[2]}
+                  </Text>
+                )}
+                {(check2 || locked2) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
+                )}
+              </>
+            }
+            checked={check2}
+            onChange={() => handleCheckboxClick(2)}
+            disabled={!isEditing || check2 || locked2}
+            mt="sm"
+          />
+          <Checkbox
+            label={
+              <>
+                Employé{" "}
+                {checkerNames[3] && (
+                  <Text span ml={5}>
+                    {checkerNames[3]}
+                  </Text>
+                )}
+                {(check3 || locked3) && (
+                  <Text span ml={6}>
+                    🔒
+                  </Text>
                 )}
               </Group>
               <TextInput
@@ -629,7 +659,7 @@ export default function ManifoldDetails({
             <Button color="#c94b06" onClick={handleSave}>
               💾 Enregistrer
             </Button>
-            <Button color="#63687c" onClick={handlePrint}>
+            <Button color="#63687c" onClick={handlePrint} mt={"sm"} variant="outline">
               🖨️ Imprimer
             </Button>
           </Group>
