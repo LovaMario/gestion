@@ -92,7 +92,7 @@ export default function ManifoldListe({
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
-                  Demandeur
+                  demandeur
                 </th>
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
