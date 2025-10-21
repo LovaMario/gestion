@@ -249,6 +249,15 @@ export default function ManifoldDetails({
     }
   }, [selectedManifold, isEditing]);
 
+  // Sécurité supplémentaire : si selectedManifold est null et on est en mode édition,
+  // s'assurer que le champ motif est bien réinitialisé (parfois l'ordre des setState
+  // côté parent peut empêcher la réinitialisation dans handleNewManifold).
+  React.useEffect(() => {
+    if (!selectedManifold && isEditing) {
+      setMotif("");
+    }
+  }, [selectedManifold, isEditing]);
+
   // Safe renderer for numeric cells to avoid React complaining about NaN children
   const renderNumber = (value: any) => {
     if (value === null || typeof value === "undefined") return "—";
