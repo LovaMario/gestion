@@ -174,6 +174,7 @@ export default function ManifoldDetails({
     setCode1("");
     setCode2("");
     setCode3("");
+    setMotif("");
     setDateCommande("");
     setQuantite(undefined);
     setNomArticle("");
