@@ -388,6 +388,7 @@ export default function BonDeSortieDetails({
       checkerNames: checkerNames,
     };
 
+    
     const method = isUpdating ? "PUT" : "POST";
 
     try {

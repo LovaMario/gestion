@@ -10,10 +10,10 @@ export type Manifold = {
   recepteur: string;
   code1: string;
   code2: string;
-  code3: string;
+  code3?: string;
   dateCommande: string;
   articles: Article[];
-  motif: string
+  motif: string;
   check1: boolean;
   check2: boolean;
   check3: boolean;
@@ -54,7 +54,32 @@ export default function ManifoldPage() {
     const fetchManifolds = async () => {
       try {
         const res = await fetch("/api/manifold");
-        if (!res.ok) throw new Error("Erreur lors du fetch");
+        if (!res.ok) {
+          // Essaie de lire le JSON d'erreur, sinon le texte brut
+          let errBody;
+          try {
+            errBody = await res.json();
+          } catch (_) {
+            try {
+              errBody = await res.text();
+            } catch (_) {
+              errBody = null;
+            }
+          }
+          console.error(
+            "/api/manifold failed",
+            res.status,
+            res.statusText,
+            errBody
+          );
+          throw new Error(
+            `Erreur fetch /api/manifold: ${res.status} ${res.statusText} - ${
+              typeof errBody === "string"
+                ? errBody
+                : errBody?.message || JSON.stringify(errBody) || ""
+            }`
+          );
+        }
         const data: Manifold[] = await res.json();
         const transformed = data.map((b) => ({
           ...b,
@@ -76,11 +101,6 @@ export default function ManifoldPage() {
     };
     fetchManifolds();
   }, []);
-
-  const handleNewBon = () => {
-    setSelectedManifold(null);
-    setIsEditing(true);
-  };
 
   const handleSaveAndReturn = async (
     updatedManifold: Manifold,

@@ -159,6 +159,7 @@ export default function ManifoldDetails({
     setDateCommande("");
     setQuantite(undefined);
     setNomArticle("");
+    setMotif(""); // Ajout : réinitialise le champ motif
 
     // Réinitialisation des articles: commence avec un article vide
     setArticles([createEmptyArticle()]);
@@ -561,7 +562,7 @@ export default function ManifoldDetails({
                 <TextInput
                   placeholder="Le code du machine"
                   label="Code Machine"
-                  value={art.code3 ?? ""}
+                  value={(art as any).code3 ?? ""}
                   onChange={(e) =>
                     handleArticleChange(art.id, "code3", e.currentTarget.value)
                   }
@@ -782,7 +783,7 @@ export default function ManifoldDetails({
                 {articles.map((a, idx) => (
                   <tr key={a.id}>
                     <td style={tdStyle}>{idx + 1}</td>
-                    <td style={tdStyle}>{code3 || "—"}</td>
+                    <td style={tdStyle}>{(a as any).code3 || "—"}</td>
                     <td style={tdStyle}>{a.NomArticle}</td>
                     <td style={tdStyle}>{a.finCompteur}</td>
                     <td style={tdStyle}>{a.imputation}</td>

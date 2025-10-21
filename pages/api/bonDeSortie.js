@@ -41,10 +41,11 @@ export default async function handler(req, res) {
       // Récupérer tous les articles de tous les bons en une seule requête
       const [articlesRows] = await db.query(
         `SELECT id, bon_de_sortie_id, codeArticle, libelleArticle, quantite, unite, imputation, imputationCode, commande 
-   FROM articles_sortie WHERE bon_de_sortie_id IN (?)`,
-        bonIds // ✅ Correction: Passer le tableau bonIds directement.
+   FROM articles_sortie WHERE bon_de_sortie_id IN (${bonIds
+     .map(() => "?")
+     .join(",")})`,
+        bonIds
       );
-
       // Grouper les articles par bon_de_sortie_id
       const articlesMap = articlesRows.reduce((acc, article) => {
         const bonId = article.bon_de_sortie_id;
@@ -94,7 +95,7 @@ export default async function handler(req, res) {
         manuelle,
         magasin,
         depot,
-        dateSortie,
+
         departement,
         atelier,
         secteur,

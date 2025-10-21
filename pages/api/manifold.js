@@ -6,27 +6,35 @@ import { db } from "../../lib/db";
 const insertArticles = async (manifoldId, articles) => {
   if (!articles || articles.length === 0) return;
 
-  const values = articles.flatMap((art) => [
-    manifoldId,
-    art.NomArticle || "",
-    art.quantite ?? 0,
-    art.unite || "",
-    art.finCompteur || "",
-    art.DPU ?? 0,
-    art.imputation ?? "",
-    // accept either per-article code3 or codeMachine
-    (art.code3 ?? art.codeMachine) || "",
-  ]);
+  // Insert in chunks to avoid too many placeholders/parameters in one query
+  const CHUNK_SIZE = 30; // safe default
+  for (let i = 0; i < articles.length; i += CHUNK_SIZE) {
+    const chunk = articles.slice(i, i + CHUNK_SIZE);
+    const values = chunk.flatMap((art) => [
+      manifoldId,
+      art.NomArticle || "",
+      art.quantite ?? 0,
+      art.unite || "",
+      art.finCompteur ?? "",
+      art.DPU ?? 0,
+      art.imputation ?? "",
+    ]);
 
-  const placeholders = articles.map(() => "(?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
-console.log("INSERT ARTICLES:", values);
+    const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ");
 
-  await db.query(
-    `INSERT INTO articles_manifold 
-      (manifold_id, NomArticle, Quantite, unite, finCompteur, DPU, imputation, code3)
-      VALUES ${placeholders}`,
-    values
-  );
+    try {
+      console.log("INSERT ARTICLES chunk, manifoldId=", manifoldId, "count=", chunk.length);
+      await db.query(
+        `INSERT INTO articles_manifold 
+          (manifold_id, NomArticle, Quantite, unite, finCompteur, DPU, imputation)
+          VALUES ${placeholders}`,
+        values
+      );
+    } catch (err) {
+      console.error("Erreur insertArticles chunk manifoldId=", manifoldId, err);
+      throw err;
+    }
+  }
 };
 
 /**
@@ -46,14 +54,17 @@ export default async function handler(req, res) {
 
       const ManifoldIds = Manifolds.map((b) => b.id);
 
+      // Construire dynamiquement les placeholders pour la clause IN
+      const manifoldPlaceholders = ManifoldIds.map(() => "?").join(",");
       const [articles] = await db.query(
         `SELECT id, manifold_id, NomArticle, Quantite, unite, finCompteur,
-         DPU, imputation, code3 
-         FROM articles_manifold 
-         WHERE manifold_id IN (?)`,
-        [ManifoldIds]
+   DPU, imputation
+   FROM articles_manifold 
+   WHERE manifold_id IN (${manifoldPlaceholders})`,
+        ManifoldIds
       );
 
+      // Grouper les articles par manifold_id
       // Grouper les articles par manifold_id
       const articlesMap = articles.reduce((acc, article) => {
         const manifoldId = article.manifold_id;
@@ -69,7 +80,6 @@ export default async function handler(req, res) {
           finCompteur: article.finCompteur,
           DPU: article.DPU,
           imputation: article.imputation,
-          code3: article.code3,
         });
         return acc;
       }, {});
@@ -172,7 +182,10 @@ export default async function handler(req, res) {
         checker3_nom: checkerNames?.[3] || null,
       };
 
-      return res.status(201).json({ message: "Manifold créé avec succès", bonDeSortie: ManifoldDeSortie });
+      return res.status(201).json({
+        message: "Manifold créé avec succès",
+        bonDeSortie: ManifoldDeSortie,
+      });
     }
 
     /**
@@ -225,10 +238,16 @@ export default async function handler(req, res) {
       );
 
       try {
-        await db.query("DELETE FROM articles_manifold WHERE manifold_id = ?", [id]);
+        await db.query("DELETE FROM articles_manifold WHERE manifold_id = ?", [
+          id,
+        ]);
         await insertArticles(id, articles);
       } catch (articleError) {
-        console.error("Erreur lors de la suppression/réinsertion des articles pour Bon ID:", id, articleError);
+        console.error(
+          "Erreur lors de la suppression/réinsertion des articles pour Bon ID:",
+          id,
+          articleError
+        );
       }
 
       const updatedBonDeSortie = {
@@ -253,6 +272,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: "Méthode non autorisée" });
   } catch (error) {
     console.error("Erreur API manifold:", error);
-    return res.status(500).json({ message: "Erreur serveur : " + error.message });
+    return res
+      .status(500)
+      .json({ message: "Erreur serveur : " + error.message });
   }
 }

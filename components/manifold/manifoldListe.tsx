@@ -39,7 +39,7 @@ export default function ManifoldListe({
       b.id.toString().toLowerCase().includes(term) ||
       b.code1.toLowerCase().includes(term) ||
       b.code2.toLowerCase().includes(term) ||
-      b.code3.toLowerCase().includes(term)
+      (b.code3 && typeof b.code3 === "string" && b.code3.toLowerCase().includes(term))
 
     );
   });
@@ -182,7 +182,7 @@ export default function ManifoldListe({
                       border: "1px solid #a59a9aff",
                     }}
                   >
-                    {Manifold.code3}
+                    {Manifold.code3 ?? ""}
                   </td>
                   <td
                     style={{
