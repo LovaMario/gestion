@@ -109,12 +109,7 @@ export default function ManifoldListe({
                 >
                   Code 2
                 </th>
-            
-                <th
-                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
-                >
-                  Imputation
-                </th>
+          
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
@@ -171,14 +166,6 @@ export default function ManifoldListe({
                     }}
                   >
                     {Manifold.code2}
-                  </td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      border: "1px solid #a59a9aff",
-                    }}
-                  >
-                    {Manifold.articles && Manifold.articles[0] ? Manifold.articles[0].imputation : ''}
                   </td>
                   <td
                     style={{

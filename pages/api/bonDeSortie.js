@@ -44,11 +44,18 @@ export default async function handler(req, res) {
       const bonIds = bons.map((bon) => bon.id);
 
       // Récupérer tous les articles de tous les bons en une seule requête
+      // Passer le tableau bonIds DANS un tableau pour que mysql2 développe correctement
+      // le placeholder IN (?). Ne pas passer `bonIds` seul car db.query attend un
+      // tableau de valeurs pour les placeholders.
       const [articlesRows] = await db.query(
         `SELECT id, bon_de_sortie_id, codeArticle, libelleArticle, quantite, unite, imputation, imputationCode, commande 
    FROM articles_sortie WHERE bon_de_sortie_id IN (?)`,
-        bonIds // ✅ Correction: Passer le tableau bonIds directement.
+        [bonIds]
       );
+
+      // Debug: combien d'articles ont été récupérés (utile pour diagnostiquer les cas où
+      // la table contient des articles mais la requête ne les retourne pas)
+      // console.debug && console.debug('articlesRows count', articlesRows.length);
 
       // Grouper les articles par bon_de_sortie_id
       const articlesMap = articlesRows.reduce((acc, article) => {
