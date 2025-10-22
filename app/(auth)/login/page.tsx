@@ -96,7 +96,7 @@ export default function LoginPage(props: PaperProps) {
   };
 
   return (
-    <Center h="100%" mt={100}>
+    <Center h="100%" mt={100} >
       <Paper
         radius="lg"
         p="xl"

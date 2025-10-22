@@ -31,11 +31,13 @@ export default function ManifoldListe({
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filtredManifold = Manifold.filter((b) =>{
+  const filtredManifold = Manifold.filter((b) => {
     const term = searchTerm.toLowerCase();
     return (
-      (b.NomArticle?.toLowerCase().includes(term)) ||
-      (b.id !== undefined && b.id !== null && b.id.toString().toLowerCase().includes(term))
+      b.id !== undefined &&
+      b.id !== null &&
+      b.id.toString().toLowerCase().includes(term)
+
     );
   });
 
@@ -51,12 +53,12 @@ export default function ManifoldListe({
   }
 
   if (Manifold.length === 0) {
-      return (
-        <Card shadow="sm" radius="md" p="md" m={10}>
-          <Text>Aucune Manifold enregistrée</Text>
-        </Card>
-      );
-    }
+    return (
+      <Card shadow="sm" radius="md" p="md" m={10}>
+        <Text>Aucune Manifold enregistrée</Text>
+      </Card>
+    );
+  }
   return (
     <Card shadow="xl" radius="lg" p="md" m={10}>
       <Title order={3} mb="md">
@@ -64,7 +66,7 @@ export default function ManifoldListe({
       </Title>
 
       <TextInput
-        placeholder="Nom de l'article"
+        placeholder="Numero manifold"
         mb="md"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.currentTarget.value)}
@@ -79,6 +81,11 @@ export default function ManifoldListe({
           <Table>
             <Table.Thead>
               <Table.Tr>
+                <th
+                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
+                >
+                  Numéro manifold
+                </th>
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
@@ -102,18 +109,9 @@ export default function ManifoldListe({
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
-                  Code 3
+                  Code machine
                 </th>
-                <th
-                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
-                >
-                  Quantité
-                </th>
-                <th
-                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
-                >
-                  Article
-                </th>
+
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
@@ -131,6 +129,14 @@ export default function ManifoldListe({
                     setIsEditing(false);
                   }}
                 >
+                  <td
+                    style={{
+                      textAlign: "center",
+                      border: "1px solid #a59a9aff",
+                    }}
+                  >
+                    {Manifold.id}
+                  </td>
                   <td
                     style={{
                       textAlign: "center",
@@ -171,22 +177,7 @@ export default function ManifoldListe({
                   >
                     {Manifold.code3}
                   </td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      border: "1px solid #a59a9aff",
-                    }}
-                  >
-                    {Manifold.quantite}
-                  </td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      border: "1px solid #a59a9aff",
-                    }}
-                  >
-                    {Manifold.NomArticle}
-                  </td>
+
                   <td
                     style={{
                       textAlign: "center",
