@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tabs, Group, Text, UnstyledButton, Menu, Title } from "@mantine/core";
+import {
+  Tabs,
+  Avatar,
+  Group,
+  Text,
+  UnstyledButton,
+  Menu,
+  Title,
+} from "@mantine/core";
 import {
   IconChevronDown,
   IconLogout,
@@ -58,9 +66,7 @@ export default function HeaderGestion() {
       <Group grow m={-20}>
         <Group m={30} display={"flex-start"}>
           <img src="logo.png" width={100} />
-          <Title order={2} ml={20}>
-            GESTION DE STOCKS
-          </Title>
+          <Title order={2} ml={20}>GESTION DE STOCKS</Title>
         </Group>
         <Group m={25} justify="flex-end">
           {/* Menu utilisateur */}
@@ -75,8 +81,8 @@ export default function HeaderGestion() {
             <Menu.Target>
               <UnstyledButton>
                 <Group gap="sm">
-                  <IconUserCircle size={25} color="#c94b06" />
-                  <Title order={6} size="sm" c="#c94b06">
+                  <IconUserCircle size={25} color="#c94b06"/>
+                  <Title order={6} size="sm"  c="#c94b06">
                     {userName}
                   </Title>
                   <IconChevronDown size={14} />
@@ -102,8 +108,8 @@ export default function HeaderGestion() {
       </Group>
       {/* TABS HEADER */}
       <Tabs
-        ml={10}
-        visibleFrom="sm"
+      ml={10}
+      visibleFrom="sm"  
         value={activeTab}
         onChange={(value: string | null) =>
           value !== null && setActiveTab(value)
@@ -123,7 +129,7 @@ export default function HeaderGestion() {
       </Tabs>
 
       {/* Contenu */}
-      <div style={{ justifyContent: "space-evenly" }}>
+      <div style={{  justifyContent:"space-evenly"}}>
         {tabsData.find((t) => t.value === activeTab)?.component ?? null}
       </div>
     </div>

@@ -1,29 +1,34 @@
 import { db } from "../../lib/db";
 
-// Fonction utilitaire pour insérer un tableau d'articles
+// Fonction utilitaire pour insérer un tableau d'articles en lots (batch) afin
+// d'éviter des requêtes INSERT trop volumineuses qui peuvent échouer.
 const insertArticles = async (bonId, articles) => {
   if (!articles || articles.length === 0) return;
 
-  const values = articles.flatMap((art) => [
-    bonId,
-    art.codeArticle || "",
-    art.libelleArticle || "",
-    art.quantite ?? 0,
-    art.unite || "",
-    art.imputation || "",
-    art.imputationCode || null,
-    art.commande || "",
-  ]);
+  const chunkSize = 50; // insérer 50 articles par requête (ajustable)
 
-  const placeholders = articles
-    .map(() => "(?, ?, ?, ?, ?, ?, ?, ?)")
-    .join(", ");
+  for (let i = 0; i < articles.length; i += chunkSize) {
+    const chunk = articles.slice(i, i + chunkSize);
 
-  await db.query(
-    `INSERT INTO articles_sortie (bon_de_sortie_id, codeArticle, libelleArticle, quantite, unite, imputation, imputationCode, commande) 
-     VALUES ${placeholders}`,
-    values
-  );
+    const values = chunk.flatMap((art) => [
+      bonId,
+      art.codeArticle || "",
+      art.libelleArticle || "",
+      art.quantite ?? 0,
+      art.unite || "",
+      art.imputation || "",
+      art.imputationCode || null,
+      art.commande || "",
+    ]);
+
+    const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+
+    await db.query(
+      `INSERT INTO articles_sortie (bon_de_sortie_id, codeArticle, libelleArticle, quantite, unite, imputation, imputationCode, commande) 
+       VALUES ${placeholders}`,
+      values
+    );
+  }
 };
 
 export default async function handler(req, res) {
@@ -39,11 +44,18 @@ export default async function handler(req, res) {
       const bonIds = bons.map((bon) => bon.id);
 
       // Récupérer tous les articles de tous les bons en une seule requête
+      // Passer le tableau bonIds DANS un tableau pour que mysql2 développe correctement
+      // le placeholder IN (?). Ne pas passer `bonIds` seul car db.query attend un
+      // tableau de valeurs pour les placeholders.
       const [articlesRows] = await db.query(
         `SELECT id, bon_de_sortie_id, codeArticle, libelleArticle, quantite, unite, imputation, imputationCode, commande 
-         FROM articles_sortie WHERE bon_de_sortie_id IN (?)`,
+   FROM articles_sortie WHERE bon_de_sortie_id IN (?)`,
         [bonIds]
       );
+
+      // Debug: combien d'articles ont été récupérés (utile pour diagnostiquer les cas où
+      // la table contient des articles mais la requête ne les retourne pas)
+      // console.debug && console.debug('articlesRows count', articlesRows.length);
 
       // Grouper les articles par bon_de_sortie_id
       const articlesMap = articlesRows.reduce((acc, article) => {
@@ -228,22 +240,25 @@ export default async function handler(req, res) {
 
       // 2. Supprimer les anciens articles et les réinsérer
       // 💡 AJOUT DU TRY...CATCH POUR ISOLER L'ERREUR D'ARTICLE (cause probable du 500)
-      try {
-        await db.query(
-          "DELETE FROM articles_sortie WHERE bon_de_sortie_id = ?",
-          [id]
-        );
-        await insertArticles(id, articles);
-      } catch (articleError) {
-        // Loguer l'erreur mais NE PAS la renvoyer comme 500 si l'UPDATE principal a réussi.
-        // Cela permet de ne pas bloquer le client si l'erreur est mineure (ex: articles vides/malformés).
-        // SI vous voulez être STRICT, remplacez le catch par 'throw articleError'.
-        console.error(
-          "Erreur lors de la suppression/réinsertion des articles pour Bon ID:",
-          id,
-          articleError
-        );
+      // Si le client n'a pas fourni de tableau `articles`, ne pas toucher
+      // aux articles existants pour éviter de les effacer accidentellement.
+      if (Array.isArray(articles)) {
+        try {
+          await db.query(
+            "DELETE FROM articles_sortie WHERE bon_de_sortie_id = ?",
+            [id]
+          );
+          await insertArticles(id, articles);
+        } catch (articleError) {
+          // Loguer l'erreur mais NE PAS la renvoyer comme 500 si l'UPDATE principal a réussi.
+          console.error(
+            "Erreur lors de la suppression/réinsertion des articles pour Bon ID:",
+            id,
+            articleError
+          );
+        }
       }
+      
       const updatedBonDeSortie = {
         ...req.body,
         articles: articles || [],

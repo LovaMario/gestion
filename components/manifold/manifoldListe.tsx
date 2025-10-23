@@ -36,7 +36,10 @@ export default function ManifoldListe({
     return (
       b.id !== undefined &&
       b.id !== null &&
-      b.id.toString().toLowerCase().includes(term)
+      b.id.toString().toLowerCase().includes(term) ||
+      b.code1.toLowerCase().includes(term) ||
+      b.code2.toLowerCase().includes(term) ||
+      b.code3.toLowerCase().includes(term)
 
     );
   });
@@ -66,7 +69,7 @@ export default function ManifoldListe({
       </Title>
 
       <TextInput
-        placeholder="Numero manifold"
+        placeholder="Rechercher par numéro manifold, Code 1, Code 2, Code machine"
         mb="md"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.currentTarget.value)}
@@ -106,12 +109,7 @@ export default function ManifoldListe({
                 >
                   Code 2
                 </th>
-                <th
-                  style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
-                >
-                  Code machine
-                </th>
-
+          
                 <th
                   style={{ textAlign: "center", border: "1px solid #a59a9aff" }}
                 >
@@ -169,15 +167,6 @@ export default function ManifoldListe({
                   >
                     {Manifold.code2}
                   </td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      border: "1px solid #a59a9aff",
-                    }}
-                  >
-                    {Manifold.code3}
-                  </td>
-
                   <td
                     style={{
                       textAlign: "center",

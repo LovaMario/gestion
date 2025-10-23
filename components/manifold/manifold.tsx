@@ -11,9 +11,9 @@ export type Manifold = {
   code1: string;
   code2: string;
   code3: string;
-  motif?: string;
   dateCommande: string;
   articles: Article[];
+  motif: string
   check1: boolean;
   check2: boolean;
   check3: boolean;
@@ -27,13 +27,13 @@ export type Manifold = {
 
 export type Article = {
   id: number; // ID temporaire pour la gestion React (key, suppression)
-  finCompteur: number | undefined;
-  quantite: number | undefined;
+  finCompteur: number;
+  quantite: number;
   NomArticle: string;
-  DPU?: string;
+  DPU: string;
   unite: string;
-  imputation?: string;
-  code3?: string;
+  imputation: string;
+  code3?: string; // code machine par article
 };
 
 export default function ManifoldPage() {
